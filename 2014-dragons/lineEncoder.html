@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<title>Line compression - array to string encoder</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<textarea rows=18 cols=70 id="arrayInput1"></textarea>
+		<textarea rows=18 cols=70 id="arrayInput2"></textarea>
+		<br>
+		<button id="checkAction">Check</button>
+		dx:<input id="encodeDX" size=4 value="0"></input> dy:<input id="encodeDY" size=4 value="0"></input>
+		<button id="importAction">Encode</button> <b id="report"></b>
+		<br>
+		<textarea rows=12 cols=120 id="stringOutput"></textarea>
+		<script>
+		
+		document.getElementById("importAction").onclick = function() 
+		{
+			var dx = parseInt(document.getElementById("encodeDX").value);
+			var dy = parseInt(document.getElementById("encodeDY").value);
+			var arrayString = document.getElementById("arrayInput1").value;
+			var imageAsString1 = encodeArray(arrayString, dx, dy);
+			arrayString = document.getElementById("arrayInput2").value;
+			var imageAsString2 = encodeArray(arrayString, dx, dy);
+			var imageAsString = addDelimiters(interleaveImages(imageAsString1, imageAsString2));
+			document.getElementById("stringOutput").value = imageAsString;
+			document.getElementById("report").innerHTML = "Length = "+imageAsString.length+" b";
+		}
+	
+		document.getElementById("checkAction").onclick = function() 
+		{
+			var image1AsArray = getImageAsArray(document.getElementById("arrayInput1").value);
+			var image2AsArray = getImageAsArray(document.getElementById("arrayInput2").value);
+			var minX=128, maxX=0, minY=128, maxY=0;
+			for (var i=1; i<image1AsArray.length; i+=6)
+			{
+				minX = Math.min(minX, Math.ceil(image1AsArray[i+2]/2), Math.ceil(image2AsArray[i+2]/2));
+				minX = Math.min(minX, Math.ceil(image1AsArray[i+4]/2), Math.ceil(image2AsArray[i+4]/2));
+				maxX = Math.max(maxX, Math.ceil(image1AsArray[i+2]/2), Math.ceil(image2AsArray[i+2]/2));
+				maxX = Math.max(maxX, Math.ceil(image1AsArray[i+4]/2), Math.ceil(image2AsArray[i+4]/2));
+				minY = Math.min(minY, Math.ceil(image1AsArray[i+3]/2), Math.ceil(image2AsArray[i+3]/2));
+				minY = Math.min(minY, Math.ceil(image1AsArray[i+5]/2), Math.ceil(image2AsArray[i+5]/2));
+				maxY = Math.max(maxY, Math.ceil(image1AsArray[i+3]/2), Math.ceil(image2AsArray[i+3]/2));
+				maxY = Math.max(maxY, Math.ceil(image1AsArray[i+5]/2), Math.ceil(image2AsArray[i+5]/2));
+			}
+			var details = "";
+			details+="X between "+minX+" and "+maxX+"\n";
+			details+="Y between "+minY+" and "+maxY+"\n";
+			minX = Math.min(0, -minX);
+			maxX = Math.max(0, 126-maxX);
+			minY = Math.min(0, -minY);
+			maxY = Math.max(0, 126-maxY);
+			var flawX = [], flawY = [];
+
+			var res1 = analyzeFlaws(image1AsArray, 0, 0, 1);
+			var res2 = analyzeFlaws(image2AsArray, 0, 0, 1);
+			var flawD = { b:res1.b+res2.b, e:res1.e+res2.e, s:res1.s+res2.s, d: res1.d+res2.d};
+			details += "L/w : "+(res1.b+res2.b)+" banned, "+(res1.e+res2.e)+" escaped => " +(res1.e+res2.e+res1.s+res2.s)+"', "+(res1.e+res2.e+res1.d+res2.d)+"\".\n";
+
+			for (var x=minX; x<=maxX ; ++x)
+			{
+				var res1 = analyzeFlaws(image1AsArray, x, 2, 4);
+				var res2 = analyzeFlaws(image2AsArray, x, 2, 4);
+				flawX[x]={ b:res1.b+res2.b, e:res1.e+res2.e, s:res1.s+res2.s, d: res1.d+res2.d};
+				details += "dx = "+x+", "+(res1.b+res2.b)+" banned, "+(res1.e+res2.e)+" escaped => " +(res1.e+res2.e+res1.s+res2.s)+"', "+(res1.e+res2.e+res1.d+res2.d)+"\".\n";
+			}
+			for (var y=minY; y<=maxY ; ++y)
+			{
+				var res1 = analyzeFlaws(image1AsArray, y, 3, 5);
+				var res2 = analyzeFlaws(image2AsArray, y, 3, 5);
+				flawY[y]={ b:res1.b+res2.b, e:res1.e+res2.e, s:res1.s+res2.s, d: res1.d+res2.d};
+				details += "dy = "+y+", "+(res1.b+res2.b)+" banned, "+(res1.e+res2.e)+" escaped => " +(res1.e+res2.e+res1.s+res2.s)+"', "+(res1.e+res2.e+res1.d+res2.d)+"\".\n";
+			}
+			 
+			var bestX=0, bestY=0, bestValue = 999, bestBanned=999;
+			for (var x=minX; x<=maxX ; ++x)
+			{
+				for (var y=minY; y<=maxY ; ++y)
+				{
+					var value = Math.min(flawD.s+flawX[x].s+flawY[y].s, flawD.d+flawX[x].d+flawY[y].d);
+					value+=flawD.e+flawX[x].e+flawY[y].e;
+					
+					var bannedValue = flawD.b+flawX[x].b+flawY[y].b;
+					if ((value == bestValue && bannedValue<bestBanned) || value < bestValue)
+					{
+						bestX = x;
+						bestY = y;
+						bestValue = value;
+						bestBanned = bannedValue;
+					}
+				}
+			}
+			details += "best for dx="+bestX+", dy="+bestY+" : "+bestBanned+" banned, "+bestValue+" escaped.\n";
+			document.getElementById("stringOutput").value = details;
+		}
+
+		// Identifies how many points have to be moved
+		// or require escaping (= extra characters)
+		function analyzeFlaws (packedImage, dv, index1 ,index2)
+		{
+			var bannedValues = 0;
+			var escapedValues = 0;
+			var singleQuotes = 0;
+			var doubleQuotes = 0;
+			for (var i=1; i<packedImage.length; i+=6) 
+			{
+				for (var j=0; j<2; ++j) 
+				{
+					var index = i+[index1, index2][j];
+					var coord = packedImage[index];
+					if ((index%6) != 1) {
+						coord = Math.ceil(coord/2);
+					}
+
+					coord+=dv;
+					bannedValues += (coord==0 || coord==10 || coord==13)?1:0;
+					escapedValues += (coord==92)?1:0;
+					singleQuotes += (coord==39)?1:0;
+					doubleQuotes += (coord==34)?1:0;
+				}
+				
+			}
+			
+			return { b : bannedValues, e : escapedValues, s:singleQuotes, d:doubleQuotes };
+		}
+		
+		
+		// Turns a string representing an array, as in one of the textboxes
+		// into the array itself, with integer values
+		function getImageAsArray(arrayString)
+		{
+			arrayString = arrayString.substring(1, arrayString.length-1);
+			arrayString = arrayString.split(",");
+			var imageAsArray = [];
+			for (var i=0; i<arrayString.length; ++i) {
+				imageAsArray.push(parseInt(arrayString[i]));
+			}
+			return imageAsArray;
+		}
+		
+		// Turns a string containing a raw array as created by appending the array to a string
+		// into a string where the ASCII code of each character maps the value (0 to 126, excluding 10 and 13)
+		// dx and dy are offsets to the initial position, manually set by the user after using the "Check" function
+		// in order to minimize bumps (alter the image) and escapes (produce a longer output string)
+		function encodeArray(arrayString, dx, dy)
+		{
+			var offset = [dy, 0, 0, dx, dy, dx];
+			var imageAsArray = getImageAsArray(arrayString);
+			
+			var imageAsString = "";
+			for (var i=1; i<imageAsArray.length; ++i) {
+				var value = imageAsArray[i];
+				if ((i%6) != 1) {
+					value = Math.ceil(value/2);
+				}
+				value += offset[i%6];	// move the point : x1, y1, x2, y2 but not luminance nor width
+				value = Math.min(Math.max(value, 1), ((i%6)==1?100:126));
+				// bumps : characters 10 and 13 are invalid in a string, so alter the value to fix that
+				value = (value==10 || value==13 ? value+1 : value);
+				imageAsString = String.fromCharCode(value)+imageAsString;
+			}
+			
+			return imageAsString;
+		
+		}
+		
+		// Delimits the string with either ' or ", whichever minimizes the total length
+		function addDelimiters(imageAsString)
+		{
+			var singleQuoteCount = imageAsString.split("'").length-1;
+			var doubleQuoteCount = imageAsString.split('"').length-1;
+			if (singleQuoteCount<doubleQuoteCount)
+			{
+				imageAsString = "x='"+imageAsString.replace(/'/g, "\\'")+"';";
+			} 
+			else
+			{
+				imageAsString = 'x="'+imageAsString.replace(/"/g, '\\"')+'";';
+			}
+
+			return imageAsString;
+		}
+		
+		// Creates a string alternating one character from each of the two inputs.
+		// The renderer takes one from each in sequence
+		function interleaveImages (str1, str2)
+		{
+			var out = "";
+			var escapedCount = 0;
+			for (var i=0; i<str1.length; ++i)
+			{
+				// escapes : backslashes needs to be doubled as the string will be interpreted. 
+				escapedCount+= (str2[i]=="\\"?1:0)+(str1[i]=="\\"?1:0);
+				out+=(str2[i]=="\\"?"\\":"")+str2[i]+(str1[i]=="\\"?"\\":"")+str1[i];
+			}
+			return out;
+		}
+
+		
+		</script>
+	</body>
+</html>

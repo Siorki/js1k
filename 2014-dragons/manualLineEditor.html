@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html><head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+		<title>Compression d'image monochromatique</title>
+		<style type="text/css">
+.colorBlock {
+  width:20px;
+  height:20px;
+  background-color:#777777;
+}
+
+.col2, .col4 {
+  margin-left:16px;
+}
+
+.line {
+  height:24px;
+}
+
+input {
+	size:6
+}
+
+#imageContainer {
+	position : fixed;
+	top : 0px;
+	right : 0px;
+}
+
+img {
+	width:240px;
+	height:240px;
+}
+
+		</style>	
+</head>
+<body>
+	<div id="debug"></div>
+	<div id="controlsContainer">
+		<div id="controlLines"></div>
+		<div id="controlButtons">
+			<button id="importAction">Import</button>
+			<button id="exportAction">Export</button>
+			<br>
+			<textarea rows=18 cols=64 id="i0CompressedOutput"></textarea>
+			<textarea rows=18 cols=64 id="i1CompressedOutput"></textarea>
+		</div>
+	</div>
+	<div id="imageContainer">
+		<div id="canvasBlock0">
+			<canvas id="c0"></canvas>
+			<br><b>Score = </b><b id="score">???</b>
+			<button id="gradientDescentAction">Gradient</button>
+			<button id="modeAction">1</button>
+		</div>
+		<div id="canvasBlock1">
+			<canvas id="c1"></canvas>
+			<br><button id="normalizeAction">Normalize</button>
+			<button id="morphAction">Morph</button>
+			<button id="roundAction">Round</button><br>
+			<button id="mirrorXAction">Mirror</button>
+		</div>
+		<div id="imageBlock">
+			<img id="img" src="faceB_gray240_edited.png" />
+			<p id="coords"></p>
+		</div>
+	</div>
+	<script>
+		
+document.getElementById("importAction").onclick=function()
+{
+	importFromArray();
+}
+
+document.getElementById("exportAction").onclick=function()
+{
+	exportToArray();
+}
+
+document.getElementById("gradientDescentAction").onclick=function()
+{
+	performGradientDescent(compressedImage[0]);
+}
+
+document.getElementById("modeAction").onclick=function()
+{
+	if (this.innerHTML=="1"){
+		this.innerHTML="2";
+		document.getElementById("canvasBlock1").style.display="none";
+	} else {
+		this.innerHTML="1";
+		document.getElementById("canvasBlock1").style.display="block";
+	}
+}
+
+document.getElementById("normalizeAction").onclick=function()
+{
+	normalize(0);
+	normalize(1);
+}
+
+document.getElementById("morphAction").onclick=function()
+{
+	startMorph();
+}
+
+document.getElementById("roundAction").onclick=function()
+{
+	roundToEven(0);
+	roundToEven(1);
+}
+
+document.getElementById("mirrorXAction").onclick=function()
+{
+	mirrorX(0);
+	mirrorX(1);
+}
+
+
+document.getElementById("img").onmousemove=function(event)
+{
+	displayCoords(this, event);
+}
+
+document.getElementById("img").onmousedown=function(event)
+{
+	return startImageDrag(event);
+}
+		
+var width=240, height=240;
+var mainZoom = 1;
+var lineCount = 60, kSize = 6;
+var selectedLine = -1, highlightedLine = -1;
+var compressedImage = [[], []];
+var dragging = false;
+var dragStart = {x:0, y:0};
+var selectedField = {col:0, row:0, domObject:null, secondObject:null, initialValue:0, secondValue:0, currentValue:0}
+initialize();
+
+function initialize()
+{
+	compressionBuffer = document.createElement("canvas");
+	imageBuffer = document.createElement("canvas");
+	
+	compressionBuffer.width = imageBuffer.width = width;
+	compressionBuffer.height = imageBuffer.height = height;
+	var image=document.getElementById("img");  
+	var imageContext = imageBuffer.getContext('2d');
+	imageContext.drawImage(image, 0, 0 );
+	refData = imageContext.getImageData(0, 0, width, height).data;
+	
+	mainCanvas = [ document.getElementById("c0"), document.getElementById("c1")];
+	mainCanvas[0].height = mainZoom*height;
+	mainCanvas[0].width = mainZoom*width;
+	mainCanvas[0].onmousedown = function(event) { startDrag(event); }
+	mainCanvas[1].height = mainZoom*height;
+	mainCanvas[1].width = mainZoom*width;
+	mainCanvas[1].onmousedown = function(event) { startDrag(event); }
+	
+	var container = document.getElementById("controlLines");
+	for (var i=0; i<lineCount; ++i)
+	{
+		var line = document.createElement("div");
+		line.setAttribute("class","line");
+		line.setAttribute("id","line"+i);
+		line.index = i;
+		container.appendChild(line);
+		line.innerHTML = "<span id='i0ColorBlock"+i+"' class='colorBlock'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>"
+						 +" L=<input type='text' size=2 id='i0ColorInput"+i+"'/>"
+						 +"<span class='col1'> width <input type='text' size=3 id='i0Width"+i+"'/></span>"
+						 +"<span class='col2'> X <input type='text' size=3 id='i0StartX"+i+"'/></span>"
+						 +"<span class='col3'> Y <input type='text' size=3 id='i0StartY"+i+"'/></span>"
+						 +"<span class='col4'> to X <input type='text' size=3 id='i0EndX"+i+"'/></span>"
+						 +"<span class='col5'> Y <input type='text' size=3 id='i0EndY"+i+"'/></span> "
+						 +"<span class='col6'><button id='i0Up"+i+"'>^</button>"
+						 +"<button id='i0Down"+i+"'>v</button></span><input type='static' size=2 value="+i+"></input>"
+						 +"<span class='col6'><button id='i1Up"+i+"'>^</button>"
+						 +"<button id='i1Down"+i+"'>v</button></span>"
+						 +"<span id='i1ColorBlock"+i+"' class='colorBlock'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>"
+						 +" L=<input type='text' size=2 id='i1ColorInput"+i+"'/>"
+						 +"<span class='col1'> width <input type='text' size=3 id='i1Width"+i+"'/></span>"
+						 +"<span class='col2'> X <input type='text' size=3 id='i1StartX"+i+"'/></span>"
+						 +"<span class='col3'> Y <input type='text' size=3 id='i1StartY"+i+"'/></span>"
+						 +"<span class='col4'> to X <input type='text' size=3 id='i1EndX"+i+"'/></span>"
+						 +"<span class='col5'> Y <input type='text' size=3 id='i1EndY"+i+"'/></span> ";
+
+					
+						 
+		line.onmouseover = function () { this.style.backgroundColor="#4080FF"; highlightedLine = this.index; drawAll();};
+		line.onmouseout = function () { this.style.backgroundColor=(this.index==selectedLine?"#20FF20":"white"); highlightedLine = -1; drawAll();};
+		document.getElementById("i0ColorInput"+i).onfocus = function() { selectField(0, 1, this.parentNode.index); }
+		document.getElementById("i0Width"+i).onfocus = function() { selectField(0, 2, this.parentNode.parentNode.index); 	}
+		document.getElementById("i0StartX"+i).onfocus = function() { selectField(0, 3, this.parentNode.parentNode.index); }
+		document.getElementById("i0StartY"+i).onfocus = function() { selectField(0, 4, this.parentNode.parentNode.index); }
+		document.getElementById("i0EndX"+i).onfocus = function() { selectField(0, 5, this.parentNode.parentNode.index); }
+		document.getElementById("i0EndY"+i).onfocus = function() { selectField(0, 6, this.parentNode.parentNode.index); }
+		document.getElementById("i0ColorInput"+i).onblur = function() { updateField(0, 1, this.parentNode.index, this.value); }
+		document.getElementById("i0Width"+i).onblur = function() { updateField(0, 2, this.parentNode.parentNode.index, this.value); 	}
+		document.getElementById("i0StartX"+i).onblur = function() { updateField(0, 3, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i0StartY"+i).onblur = function() { updateField(0, 4, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i0EndX"+i).onblur = function() { updateField(0, 5, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i0EndY"+i).onblur = function() { updateField(0, 6, this.parentNode.parentNode.index, this.value); }
+		if (i>0) {
+			document.getElementById("i0Up"+i).onclick = function() { exchangeLines(0, this.parentNode.parentNode.index, this.parentNode.parentNode.index-1); }
+		}
+		if (i<lineCount-1) {
+			document.getElementById("i0Down"+i).onclick = function() { exchangeLines(0, this.parentNode.parentNode.index, this.parentNode.parentNode.index+1); }
+		}
+		document.getElementById("i1ColorInput"+i).onfocus = function() { selectField(1, 1, this.parentNode.index); }
+		document.getElementById("i1Width"+i).onfocus = function() { selectField(1, 2, this.parentNode.parentNode.index); 	}
+		document.getElementById("i1StartX"+i).onfocus = function() { selectField(1, 3, this.parentNode.parentNode.index); }
+		document.getElementById("i1StartY"+i).onfocus = function() { selectField(1, 4, this.parentNode.parentNode.index); }
+		document.getElementById("i1EndX"+i).onfocus = function() { selectField(1, 5, this.parentNode.parentNode.index); }
+		document.getElementById("i1EndY"+i).onfocus = function() { selectField(1, 6, this.parentNode.parentNode.index); }
+		document.getElementById("i1ColorInput"+i).onblur = function() { updateField(1, 1, this.parentNode.index, this.value); }
+		document.getElementById("i1Width"+i).onblur = function() { updateField(1, 2, this.parentNode.parentNode.index, this.value); 	}
+		document.getElementById("i1StartX"+i).onblur = function() { updateField(1, 3, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i1StartY"+i).onblur = function() { updateField(1, 4, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i1EndX"+i).onblur = function() { updateField(1, 5, this.parentNode.parentNode.index, this.value); }
+		document.getElementById("i1EndY"+i).onblur = function() { updateField(1, 6, this.parentNode.parentNode.index, this.value); }
+		if (i>0) {
+			document.getElementById("i1Up"+i).onclick = function() { exchangeLines(1, this.parentNode.parentNode.index, this.parentNode.parentNode.index-1); }
+		}
+		if (i<lineCount-1) {
+			document.getElementById("i1Down"+i).onclick = function() { exchangeLines(1, this.parentNode.parentNode.index, this.parentNode.parentNode.index+1); }
+		}
+	}
+}
+
+function displayCoords(image, event)
+{
+	var coords = getEventLocalCoords(event);
+	var coordsDOMObject = document.getElementById("coords");
+	var luminance = Math.round(refData[4*(coords.x+width*coords.y)]/2.55);
+	coordsDOMObject.innerHTML="x="+coords.x+", y="+coords.y+", L="+luminance;
+}
+
+function getEventLocalCoords(event)
+{
+	var x = event.clientX, y= event.clientY;
+	var targetCoords= getDOMObjectCoords(event.target);
+	x-=targetCoords.left;
+	y-=targetCoords.top;			
+	return {x:x, y:y};
+}
+
+function getDOMObjectCoords(target)
+{
+	var x=target.offsetLeft, y=target.offsetTop;
+	while (target.offsetParent)
+	{
+		target = target.offsetParent;
+		x+=target.offsetLeft;
+		y+=target.offsetTop;
+	}
+	return {left:x, top:y}
+}
+
+function startImageDrag(event)
+{
+	if (!dragging) {
+		dragging = true;
+
+		var line = selectedField.row;
+		var startCoords=getEventLocalCoords(event);
+		document.getElementById("i0StartX"+line).value=startCoords.x;
+		document.getElementById("i0StartY"+line).value=startCoords.y;
+		updateField(0, 3, line, startCoords.x);
+		updateField(0, 4, line, startCoords.y);
+		
+		document.onmousemove = function(event) { return doImageDrag(event); }
+		document.onmouseup = function(event) { return endImageDrag(event); }
+	}
+	return false;
+}
+
+function doImageDrag(event)
+{
+	var line = selectedField.row;
+	var endCoords=getEventLocalCoords(event);
+	document.getElementById("i0EndX"+line).value=endCoords.x;
+	document.getElementById("i0EndY"+line).value=endCoords.y;
+	updateField(0, 5, line, endCoords.x);
+	updateField(0, 6, line, endCoords.y);
+	return false;
+}
+
+function endImageDrag(event)
+{
+	dragging = false;
+	document.onmousemove = null;
+	document.onmousedown = null;
+	critterChanged(0);
+	return false;
+}
+
+
+function startDrag(event)
+{
+	if (!dragging) {
+		dragging = true;
+		dragStart = { x:event.screenX, y:event.screenY }
+		
+		document.onmousemove = function(event) { doDrag(event); }
+		document.onmouseup = function(event) { endDrag(event); }
+	}
+	return true;
+}
+
+function doDrag(event)
+{
+	var dx = (event.screenX - dragStart.x)/mainZoom;
+	var dy = (event.screenY - dragStart.y)/mainZoom;
+	//document.getElementById("debug").innerHTML = "start ("+dragStart.x+","+dragStart.y+"), current ("+event.screenX+","+event.screenY+"), delta=("+dx+","+dy+")";
+	switch (selectedField.col) {
+		case 1 : // color
+			selectedField.currentValue = Math.min(Math.max(selectedField.initialValue + dy, 0), 100);
+			document.getElementById("colorBlock"+selectedField.row).style.backgroundColor="hsl(0,0%,"+selectedField.currentValue+"%)";
+			break;
+		case 2 : // width
+			selectedField.currentValue = Math.min(Math.max(selectedField.initialValue + dx, 0), 300);
+			break;
+		case 3 : // X
+		case 5 :
+			selectedField.currentValue = Math.min(Math.max(selectedField.initialValue + dx, -50), 300);
+			selectedField.secondValue =  Math.min(Math.max(selectedField.secondInitialValue + dy, -50), 300);
+			break;
+		case 4 : // Y
+		case 6 : 
+			selectedField.currentValue = Math.min(Math.max(selectedField.initialValue + dy, -50), 300);
+			selectedField.secondValue =  Math.min(Math.max(selectedField.secondInitialValue + dx, -50), 300);
+			break;
+		default :
+		}
+	selectedField.domObject.value = selectedField.currentValue;
+	selectedField.secondObject.value = selectedField.secondValue;
+	
+	compressedImage[selectedField.image][selectedField.col+selectedField.row*kSize] = selectedField.currentValue;
+	compressedImage[selectedField.image][selectedField.secondCol+selectedField.row*kSize] = selectedField.secondValue;
+	critterChanged(selectedField.image);
+		
+	return true;
+}
+
+function endDrag(event)
+{
+	dragging = false;
+	document.onmousemove = null;
+	document.onmousedown = null;
+	
+	return true;
+}
+
+/**
+ * Exchange the contents of two lines
+ * Used mostly for consecutive lines, called by the up and down buttons on each line
+ */
+function exchangeLines(image, l1,l2)
+{
+	for (var i=1; i<kSize+1; ++i) {
+		var save = compressedImage[image][l1*kSize+i];
+		compressedImage[image][l1*kSize+i] = compressedImage[image][l2*kSize+i];
+		compressedImage[image][l2*kSize+i] = save;
+	}
+	reloadAllFields(image);
+	if (selectedLine == l1) {
+		selectField(image, selectedField.col, l2);
+	}
+	critterChanged(image);
+}
+
+/**
+ * Called upon focus on a field, select it for edition (and mouse drag in canvas)
+ */
+function selectField(imageIndex, column, line)
+{
+	var domObject = document.getElementById("i"+imageIndex+["ColorInput","Width","StartX","StartY","EndX","EndY"][column-1]+line);
+	var secondObject = document.getElementById("i"+imageIndex+["ColorInput","Width","StartX","StartY","EndX","EndY"][(column-1)^1]+line);
+	selectedField = {image : imageIndex,
+					 col : column, 
+					 row : line,
+					 secondCol : 1+((column-1)^1),
+					 domObject : domObject,
+					 secondObject : secondObject,
+					 initialValue : parseInt(domObject.value),
+					 secondInitialValue : parseInt(secondObject.value),
+					 currentValue : parseInt(domObject.value),
+					 secondValue : parseInt(secondObject.value)
+					};
+	if (selectedLine > -1) {
+		document.getElementById("line"+selectedLine).style.backgroundColor = "white";
+	}
+	selectedLine = line;
+	if (selectedLine > -1) {
+		document.getElementById("line"+selectedLine).style.backgroundColor = "#20FF20";
+	}
+	drawAll();
+}
+	
+/**
+ * Called upon end of edition (onblur) of a textbox
+ */
+function updateField(image, field, line, value)
+{
+	value = parseInt(value);
+	if (field==1) { // update color block
+		document.getElementById("i"+image+"ColorBlock"+line).style.backgroundColor="hsl(0,0%,"+value+"%)";
+	}
+	compressedImage[image][field+line*kSize] = value;
+	critterChanged(image);
+}		
+
+/**
+ * imageIndex : 0 for left image, 1 for rightImage
+ */
+function reloadAllFields(imageIndex)
+{
+	var prefix = "i"+imageIndex;
+	for (var i=0; i<lineCount; ++i) {
+		document.getElementById(prefix+"ColorBlock"+i).style.backgroundColor="hsl(0,0%,"+compressedImage[imageIndex][6*i+1]+"%)";
+		document.getElementById(prefix+"ColorInput"+i).value = compressedImage[imageIndex][6*i+1];
+		document.getElementById(prefix+"Width"+i).value = compressedImage[imageIndex][6*i+2];
+		document.getElementById(prefix+"StartX"+i).value = compressedImage[imageIndex][6*i+3];
+		document.getElementById(prefix+"StartY"+i).value = compressedImage[imageIndex][6*i+4];
+		document.getElementById(prefix+"EndX"+i).value = compressedImage[imageIndex][6*i+5];
+		document.getElementById(prefix+"EndY"+i).value = compressedImage[imageIndex][6*i+6];
+	}
+}
+
+/**
+ * Perform all actions (redraw, recompute score) linked to a change in the critter definition
+ */
+function critterChanged(imageIndex)
+{
+	drawCritter(compressedImage[imageIndex], mainCanvas[imageIndex], mainZoom, true);
+	if (imageIndex == 0) {
+		var score = evaluateCritterScore(compressedImage[imageIndex]);
+		document.getElementById("score").innerHTML = score;
+	}
+}
+		
+function importFromArray()
+{
+	for (var imageIndex=0; imageIndex<2; ++imageIndex)
+	{
+		var arrayString = document.getElementById("i"+imageIndex+"CompressedOutput").value;
+		arrayString = arrayString.substring(1, arrayString.length-1);
+		arrayString = arrayString.split(",");
+		for (var i=0; i<arrayString.length; ++i) {
+			compressedImage[imageIndex][i] = parseInt(arrayString[i]);
+		}
+		reloadAllFields(imageIndex);
+		critterChanged(imageIndex);
+	}
+}		
+
+function exportToArray()
+{
+	document.getElementById("i0CompressedOutput").value = "["+compressedImage[0]+"]";	
+	document.getElementById("i1CompressedOutput").value = "["+compressedImage[1]+"]";	
+}
+
+/**
+ * Reorder start (x1,y1) and end (x2,y2) coordinates of each line
+ * to get the lower x first.
+ * This will avoid rotating the line in the morphing sequence
+ */
+function normalize()
+{
+	for (var imageIndex = 0; imageIndex<2; ++imageIndex)
+	{
+		for (var line=0; line<lineCount; ++line)
+		{
+			if (compressedImage[imageIndex][line*kSize+3] > compressedImage[imageIndex][line*kSize+5]
+				|| (compressedImage[imageIndex][line*kSize+3] == compressedImage[imageIndex][line*kSize+5]
+					&& compressedImage[imageIndex][line*kSize+4] > compressedImage[imageIndex][line*kSize+6]) )
+			{
+				var save = compressedImage[imageIndex][line*kSize+3];
+				compressedImage[imageIndex][line*kSize+3] = compressedImage[imageIndex][line*kSize+5];
+				compressedImage[imageIndex][line*kSize+5] = save;
+				save = compressedImage[imageIndex][line*kSize+4];
+				compressedImage[imageIndex][line*kSize+4] = compressedImage[imageIndex][line*kSize+6];
+				compressedImage[imageIndex][line*kSize+6] = save;
+			}
+		}
+		reloadAllFields(imageIndex);
+	}
+	critterChanged(0);
+	critterChanged(1);
+
+}
+
+/**
+ * Follow the gradient to improve the score of a critter
+ * Skipped if the score is exactly the same as before last call (since we know that it will not improve)
+ */
+function performGradientDescent(critter)
+{
+	var refScore = evaluateCritterScore(critter);
+	for (var i=1; i<kSize*lineCount+1; ++i) {
+		++critter[i];
+		var newScore = evaluateCritterScore(critter);
+		if (newScore >= refScore) {
+			--critter[i];
+			if (critter[i]>1) {
+				--critter[i];
+				newScore = evaluateCritterScore(critter);
+				if (newScore >= refScore) {
+					++critter[i];
+				} else {
+					refScore = newScore;
+				}
+			}
+		} else {
+			refScore = newScore;
+		}
+		
+	}
+	reloadAllFields(0);
+	critterChanged(0);
+}
+
+
+/**
+ * Calculate the critter's fitness to the environment
+ * By summing the differences over each pixel of the image (lower is better)
+ */
+function evaluateCritterScore(critter)
+{
+	var score = 0;
+	drawCritter(critter, compressionBuffer, 1, false);
+	var data = compressionBuffer.getContext("2d").getImageData(0,0,width,height).data;
+	for (var i=0;i<width*height*4; i+=8)
+	{
+		score += (data[i]-refData[i])*(data[i]-refData[i]);
+	}
+	critter[0]=score;
+	return score;
+}
+
+
+/**
+ * Draw both critters on screen canvases
+ */
+function drawAll()
+{
+	drawCritter(compressedImage[0], mainCanvas[0], mainZoom, true);
+	drawCritter(compressedImage[1], mainCanvas[1], mainZoom, true);
+}
+
+/**
+ * Draw a critter from the current population on the canvas
+ */
+function drawCritter (critter, canvas, zoom, highlight)
+{
+	var context = canvas.getContext("2d");
+	context.fillStyle="black";
+	context.fillRect(0,0,zoom*width, zoom*height);
+	context.lineCap="round";
+	for (var i=0 ; i<lineCount; ++i) 
+	{
+		context.strokeStyle="hsl(0,0%,"+critter[i*kSize+1]+"%)";
+		if (highlight) {
+			if (highlightedLine == i) {
+				context.strokeStyle="#4080FF";
+			}
+			if (selectedLine == i) {
+				context.strokeStyle="#20FF20";
+			}
+		}
+		context.lineWidth = zoom*critter[i*kSize+2];
+		context.beginPath();
+		context.moveTo(zoom*critter[i*kSize+3],zoom*critter[i*kSize+4]);
+		context.lineTo(zoom*critter[i*kSize+5],zoom*critter[i*kSize+6]);
+		context.stroke();
+	}
+}
+
+function startMorph()
+{
+	time = 0; delay=0;
+	drawMorph();
+}
+
+function drawMorph()
+{
+	var k = .5+.5*Math.cos(3.1416*time/64);
+	var a = mainCanvas[0].getContext("2d");
+	a.fillStyle="black";
+	a.fillRect(0,0,width, height);
+	for (var i=1; i<lineCount*kSize;)
+	{
+		a.strokeStyle = "hsl(20,0%,"+(k*compressedImage[0][i]+(1-k)*compressedImage[1][i++])+"%)";
+		a.lineWidth=0|(k*compressedImage[0][i]+(1-k)*compressedImage[1][i++]);
+		a.beginPath();
+		a.moveTo(k*compressedImage[0][i]+(1-k)*compressedImage[1][i++],
+				 k*compressedImage[0][i]+(1-k)*compressedImage[1][i++]);
+		a.lineTo(k*compressedImage[0][i]+(1-k)*compressedImage[1][i++],
+				 k*compressedImage[0][i]+(1-k)*compressedImage[1][i++]);
+		a.stroke();
+	}
+	delay=delay?--delay:(++time&63)?delay:64;	
+	if (time < 128) {
+		setTimeout(drawMorph, 40);
+	}
+}
+
+/**
+ * Round the image coordinates (all but luminance) to even values as will be done for the encoding.
+ * The goal is to anticipate on the accuracy losses on the final version
+ */
+function roundToEven(imageIndex)
+{
+	for (var i=0; i<lineCount*kSize; ++i) 
+	{
+		var value = compressedImage[imageIndex][i+1];
+		if ((i%kSize) > 0) 
+		{
+			value = Math.min(Math.max(value, 1), 252);
+			value += (value&1)?1 :0;
+		} else {
+			value = Math.min(Math.max(value, 1), 100);
+		}
+		compressedImage[imageIndex][i+1] = value;
+	}	
+	reloadAllFields(imageIndex);
+	critterChanged(imageIndex);
+}
+
+/**
+ * Mirror the image in X direction
+ */
+ function mirrorX(imageIndex)
+ {
+	for (var i=0; i<lineCount*kSize; i+=kSize) 
+	{
+		compressedImage[imageIndex][i+3] = 239 - compressedImage[imageIndex][i+3];
+		compressedImage[imageIndex][i+5] = 239 - compressedImage[imageIndex][i+5];
+	}	
+	reloadAllFields(imageIndex);
+	critterChanged(imageIndex);
+ }
+ 
+		</script>
+
+</body></html>

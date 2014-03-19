@@ -1,0 +1,6 @@
+My entry "Choose your princess" to js1k 2014
+ 
+ - princess_uncompressed.js : original code of the entry
+ - lineCompressionGray.html : automated compression tool, using genetic-algorithm to squeeze an image into 60 lines
+ - manualLineEditor.html : used to list and edit the coordinates of the 60 lines
+ - lineEncoder.html : tool to pack two images represented as array of lines, into an interleaved string for the final entry
