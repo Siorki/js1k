@@ -6,6 +6,7 @@ Each image is drawn using only 60 lines (360 bytes).
 
 List of files contained in the repository : 
  - princess_uncompressed.js : original code of the entry, before minification and packing
+ - princess_minified.js : final minified and packed code, as submitted to the contest
  - lineCompressionGray.html : automated compression tool, using genetic-algorithm to squeeze an image into 60 lines
  - manualLineEditor.html : used to list and edit the coordinates of the 60 lines
  - lineEncoder.html : tool to pack two images represented as array of lines, into an interleaved string for the final entry
