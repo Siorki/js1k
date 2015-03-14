@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>JS1k, 1k demo submission [ID]</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+				var a = document.getElementsByTagName('canvas')[0];
+var b = document.body;
+var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+// unprefix some popular vendor prefixed things (but stick to their original name)
+var AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+var requestAnimationFrame =
+window.requestAnimationFrame ||
+window.mozRequestAnimationFrame ||
+window.webkitRequestAnimationFrame ||
+window.msRequestAnimationFrame ||
+function(f){ setTimeout(f, 1000/30); };
+ 
+// fix bug in safari: http://qfox.nl/weblog/218
+document.body.clientWidth;
+// auto resize (original) canvas. call `onresize(w,h) to limit the size of the canvas
+(window.onorientationchange = window.onresize = function(a){
+var mw = Infinity;
+var mh = Infinity;
+var min = Math.min;
+ 
+return function(w,h){
+if (arguments.length === 2) {
+mw = w;
+mh = h;
+}
+a.style.width = (a.width = min(mw, innerWidth)) + 'px';
+a.style.height = (a.height = min(mh, innerHeight)) + 'px';
+};
+}(a))();
+ 
+var c = a.getContext('2d');
+
+
+
+	// submission begin
+	/*
+	 * global variables
+	 *
+	 * p (land) : planet heightmap ( p in comanche)
+	 * t (time) : animation timer
+	 * a (a2) : secondary canvas (cache)
+	 * cc(c2) : secondary canvas 2D context
+	 * n (rGradient) : (beginning only, can be reused) : star gradient cache
+	 * e (i2) : secondary canvas image buffer
+	 * d (d2) : secondary canvas image buffer data
+	 * f (rx) : planet tilt angle
+	 * x y w (x)(y)(z) : cartesian coordinates of screen projection onto planet
+	 * x - n (xp)(yp)(zp) : cartesian coordinates of ray hit onto rotated planet
+	 * i (l) altitude of land at given pixel
+	 * n (light) : light received by pixel while drawing planet
+	 * q (k) : drawn pixel offset into secondary canvas image buffer data
+	 * u (sunX) : coordinates to draw sun on screen
+	 * s (planetSize) : radius of planet in pixels
+	 * s (halfSize) : radius of sun in pixels
+	 * i (i) loop index
+	 * (i)(j)(t)(n)(x)(y) : loop coordinates upon generating planet
+	 *
+	 * parameters needed
+	 *  star radius
+	 *  star color
+	 *  planet ocean level
+	 *  planet colors
+	 */
+
+	 for(_='25~75Z2~,Z,Ys&3],X*iW&~5VW)VUMath.TTPILin(K00JJ)H*(GtaF]=E15DD0B12AV)@++;d[qE](c[c.fc-n,n=~6;)fyEs%0,+=[1,-1][A8Tcos(*TsKf)+f)*=Tsqrt(Z*Z-y*y);n.addColorStop(a.width,a.heightTmax(	for(2*n,2*nc.drawImage(a,nGi<0?i=0;i-DB3H)*L/3H*	TmKt-if(!t){a=a.cloneNode(p=[s=5]i in cc=a.getContext("2d"))c[i[0]+[i[6]]Ei;e=cggd=e.daF}if(t%AZ<1){cccRY~,Y60x=y=f="rgb("+[531+DV,D+32V]1,"#J0"cD;f<*p[fETmK3*(f@/20)-3*f/H-7+23e5;--n;s*=(-s)/65)xXy3-Xt=-6;t6p[Gy+t@+(x+i@]+=.01}f=t/2Jy=-Z;y<Zx=-(C)@,q=4G(y+Z)*B+Z-Cx<C{w-x*xi=p[((*TaFn2(yw,x)+t)/L@+GTacos((-wy)/Z)*/L@];.1+.J8*	n-x)-:+~U-7W:Z+50U:ZU~5}cpge,0"hsl(,~%,"+	1J-t)+"%";c.save("#fff"F.5*/2c.roFte(-.2-.210FC=8J9-405J-5J1JZJiW%Z~-Bi%~~-B	i%D/7,t-AH,	1,t-11H~0-Z35-B1J;,AJs|40;gCE"lighter";AD,-~Z~Gi&6),D,-CW~Wre)';g=/[^ -?CIM-S[-}]/.exec(_);)with(_.split(g))_=join(shift(t=0));setInterval(_,33)
+
+	 // END
+		</script>
+
+</body></html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>JS1k, 1k demo submission [ID]</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+				var a = document.getElementsByTagName('canvas')[0];
+var b = document.body;
+var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+// unprefix some popular vendor prefixed things (but stick to their original name)
+var AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+var requestAnimationFrame =
+window.requestAnimationFrame ||
+window.mozRequestAnimationFrame ||
+window.webkitRequestAnimationFrame ||
+window.msRequestAnimationFrame ||
+function(f){ setTimeout(f, 1000/30); };
+ 
+// fix bug in safari: http://qfox.nl/weblog/218
+document.body.clientWidth;
+// auto resize (original) canvas. call `onresize(w,h) to limit the size of the canvas
+(window.onorientationchange = window.onresize = function(a){
+var mw = Infinity;
+var mh = Infinity;
+var min = Math.min;
+ 
+return function(w,h){
+if (arguments.length === 2) {
+mw = w;
+mh = h;
+}
+a.style.width = (a.width = min(mw, innerWidth)) + 'px';
+a.style.height = (a.height = min(mh, innerHeight)) + 'px';
+};
+}(a))();
+ 
+var c = a.getContext('2d');
+
+
+	// framerate
+  	b.appendChild(debug = document.createElement("div"));
+	debug.style.position="absolute";
+	debug.style.top="5px";
+	debug.style.color="#F00";
+	frame=0; t0 = new Date();	// FPS measure only
+
+	// submission begin
+	/*
+	 * global variables
+	 *
+	 * p (land) : planet heightmap
+	 * t (time) : animation timer
+	 * a (a2) : secondary canvas (cache)
+	 * cc(c2) : secondary canvas 2D context
+	 * n (rGradient) : (beginning only, can be reused) : star gradient cache
+	 * e (i2) : secondary canvas image buffer
+	 * d (d2) : secondary canvas image buffer data
+	 * f (rx) : planet tilt angle
+	 * x y w (x)(y)(z) : cartesian coordinates of screen projection onto planet
+	 * x - n (xp)(yp)(zp) : cartesian coordinates of ray hit onto rotated planet
+	 * i (l) altitude of land at given pixel
+	 * n (light) : light received by pixel while drawing planet
+	 * q (k) : drawn pixel offset into secondary canvas image buffer data
+	 * u (sunX) : coordinates to draw sun on screen
+	 * n (planetSize) : radius of planet in pixels
+	 * n (halfSize) : radius of sun in pixels
+	 * i (i) loop index
+	 * i t n s x y f (i)(j)(t)(n)(x)(y) : loop coordinates upon generating planet
+	 * s : seed for pseudorandom, changed by planet generation
+	 *
+	 * parameters needed
+	 *  star radius
+	 *  star color
+	 *  planet ocean level
+	 *  planet colors
+	 */
+	 
+
+	// create a cache for the planet and the star
+	a = a.cloneNode(p=[s=5]);
+	cc = a.getContext("2d");
+	e = cc.getImageData(t=0,0,150,150); d=e.data;
+	
+	setInterval( function () {
+		if (t%1275<1) {
+			// arriving to a new star system
+			
+			// draw the star onto the cache
+			cc.fillStyle = n = cc.createRadialGradient(225, 75, 25, 225, 75, 60);
+			n.addColorStop(x=y=f=0, "rgb("+[50, 31+s%15&255, 15+s%32&255]);
+			n.addColorStop(1, "#000");
+			cc.fillRect(150,0,150,150);
+
+			// dig the oceans
+			for (; f<256*256; )
+				p[f++]=Math.min(0,3*Math.cos((f&255)/20)-3*Math.cos(f/12800)-s%7+2);
+
+			// then add the hills
+			for (n=3e5;--n;s*=(256-s)/65)	// logistic map for pseudorandom
+				for (x+=[0,1,0,-1][s&3],
+					 y+=[0,1,0,-1][3-s&3],
+					 t=-6;++t;)
+					for (i=0;++i-6;) 
+						p[256*(y+t&255)+(x+i&255)]+=.01;
+		}
+
+		// drawView()
+		// 0-100 : whiteout progressively vanishes, motions starts slowly
+		// 100-300 : pan on star
+		// 300-400 : bring planet to center
+		// 400-500 : move forward towards planet
+		// 500-700 : still, planet rotates
+		// 900-1100 : fly over planet
+		// 1100-1275 : initiate warp
+
+		// draw the rotated planet into the cache
+		f = Math.cos(++t/200);
+		for (y=-75; ++y<75;)
+			for(x=-(u=Math.sqrt(75*75-y*y)&255),
+				q = 4*((y+75)*150+75-u);
+				++x<u;)
+			{
+				w=Math.sqrt(75*75-y*y-x*x);
+				i = p[((128*Math.atan2(n = y*Math.sin(f)+Math.cos(f)*w,x) + t)/Math.PI&255)+256*(Math.acos((-w*Math.sin(f)+Math.cos(f)*y)/75)*256/Math.PI&255)];
+				n = .1+.008*Math.max(0, n-x);
+				
+				d[q++]= n*(i<0?128-s%128:s%128+s%25*i)&255;
+				d[q++]= n*(i<0?-7*i:75+s%50*i)&255;
+				d[q++]= n*(i<0?s%128:s%75*i)&255;
+				d[q++]=255;
+			}
+		cc.putImageData(e,0,0);
+
+		// flash vanishes in the first 100 frames
+		c.fillStyle="hsl(256,25%,"+Math.max(0,100-t)+"%";
+		c.fillRect(0,0,a.width,a.height);
+		c.save(c.fillStyle = "#fff");
+		c.translate(.5*a.width, a.height/2);
+		c.rotate(-.2-.2*Math.cos(Math.max(0, Math.min(t-100, 300))*Math.PI/300));
+		
+		// camera motion
+		c.translate(u = 800*Math.cos(Math.max(0, Math.min(t-90, 300))*Math.PI/300)-400,
+					500-500*Math.cos(Math.max(0, Math.min(t-1000, 300))*Math.PI/300));
+		
+		
+		// draw starfield, with trail (frame 1100+) then warp effect (frame 1200+)
+		for (i=0; ++i-7500;)
+			c.fillRect(i*i%7525-1500,i%2525-1500, Math.max(i%15/7, t-1200), Math.max(1, t-1100));
+
+		// copy scaled planet from cache
+		n = 250-75*Math.cos(Math.max(0, Math.min(t-350, 300))*Math.PI/300)
+				-150*Math.cos(Math.max(0, Math.min(t-1000, 300))*Math.PI/300);
+		c.drawImage(a, 0, 0, 150, 150, 1200-n, -n, 2*n, 2*n);
+		
+		// draw star (multiple copies of the cache, with the appropriate compositing)
+		n=s|40;	// star size, different in each system
+		c.globalCompositeOperation="lighter";
+		for (i=0;++i-12;)
+			c.drawImage(a, 150, 0, 150, 150, -n, -25-n, 2*n, 2*n);
+			
+		// draw the lens flare
+		for (i=0;++i-75;)
+			n=25*(i&6),c.drawImage(a, 150, 0, 150, 150, -u*i-n, 25*i-n, 2*n, 2*n);
+			
+		// reset camera aim, rotation, composite operation for next frame
+		c.restore();
+		
+		
+		
+		//++t;++t;++t;++t;
+		++frame;
+		var frameRate= 1000*frame / (new Date() - t0);
+		debug.innerHTML="s="+(((s*10)|0)/10)+", time="+t+", frameRate="+frameRate;
+	
+	}, 33);
+
+      // END
+		</script>
+
+</body></html>
