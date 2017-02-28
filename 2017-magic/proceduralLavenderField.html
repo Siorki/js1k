@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>JS1k, 1k demo submission [ID]</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+			var b = document.body;
+			var a = document.getElementsByTagName('canvas')[0];
+			var c = a.getContext('2d');
+			document.body.clientWidth; // fix bug in webkit: http://qfox.nl/weblog/218
+			a.width = a.height= 512;
+			a.style.width = a.style.height = "512px";
+			
+			
+			// start
+			x=w=h=512; 
+			c.fillStyle = `#433`;
+			c.fillRect(0,0,w,h);
+			c.fillStyle = `#fff`;
+			c.fillRect(0,0,w,256);
+			for (j=0; j<256; j+=.02) 
+				for (i=-30;i<30; i+=3) {
+					z = 6*Math.random();
+					c.fillStyle = `#7cd`;
+					c.fillRect(i*j+256+z*j,256-j,30,.1);
+					c.fillStyle = `hsl(289,80%,${30+j/4+20*Math.cos(z+2)}%`;
+					c.fillRect(i*j+256+j*Math.cos(z), 3*j+256+j*Math.sin(z), 4, 5);
+					c.fillStyle = `hsl(80,65%,${30+10*Math.random()}%)`; 
+					c.fillRect(2+i*j+256+j*Math.cos(z), 3*j+256+j*Math.sin(z)+5, 1, j/5);
+				}
+
+		</script>
+
+</body></html>
