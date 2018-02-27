@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<title>JS1k, 1k demo submission [ID]</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<canvas id="c"></canvas>
+		<script>
+			var b = document.body;
+			var a = document.getElementsByTagName('canvas')[0];
+			a.width = innerWidth;
+			a.style.width = innerWidth+"px";
+			a.height = innerHeight;
+			a.style.height = innerHeight+"px";
+			var c = a.getContext('2d');
+			document.body.clientWidth; // fix bug in webkit: http://qfox.nl/weblog/218
+		</script>
+		<script>
+// start of submission //
+      // THIS IS WHERE YOUR DEMO GOES
+/*
+ * global variables
+ *
+ * a : (provided by shim) <canvas> DOM element, then Audio element [formely audio]
+ * b : (provided by shim) document body
+ * c : (provided by shim) canvas 2D context
+ * d : sound string [formerly sound] during generation, then start play time
+ * e : (unused) parameter event
+ * f : FileReader for input
+ * g : 
+ * h : [global] image height
+ * i : iteration loop
+ * j : iteration loop, current sample [formerly sample]
+ * l : 
+ * m : <img> DOM element used for loading + extracted bitmap during generation
+ * p : 
+ * q : 
+ * r : seed for random image generation
+ * s : [global] source ImageData from the input image
+ * t : random variable in terrain ; time when computing sound wave
+ * u : temporary maximum volume, to scale output [formerly maxVol]
+ * v : temporary current volume, when identifying max [formerly volume]
+ * w : [global] image width
+ * x : stroke X
+ * y : stroke Y
+ * z : 
+ * A : Upload button
+ * B : Play button
+ * C : function, draws the built-in image set
+ * D : drawing function for recursive fractals
+ * H : 
+ * I : angle 1 for IFS generation
+ * J : angle 2 for IFS generation
+ * L : 
+ * T : function, creates and plays a sound from the image
+ * U : function, draws the current time marker
+ * V : 
+ * Y : 
+ */
+ 
+ 
+ /*
+  * A1 / LA1 :    55 Hz
+  * A2 / LA2 :   110 Hz
+  * A3 / LA3 :   220 Hz
+  * A4 / LA4 :   440 Hz
+  * A5 / LA5 :   880 Hz
+  * A6 / LA6 :  1760 Hz
+  * A7 / LA7 :  3520 Hz
+  * A8 / LA8 :  7040 Hz
+ */
+ 
+U = e =>
+{
+	c.globalCompositeOperation=`difference`;
+	c.fillStyle=`#fff`;
+	c.fillRect(X,0,2,h);
+	if ((X = (Date.now()-d)>>4) < w) {
+		c.fillRect(X,0,2,h);
+		setTimeout(U, 33);
+	}
+	c.globalCompositeOperation=`source-over`;
+}
+ 
+ 
+// read the image and turn it into sound
+T = e =>
+{
+	s = c.getImageData(0, 0, w, h).data;
+	//d = `RIFF=newWAVEfmt `+atob(`EAAAAAEAAQBAHwAAQB8AAAEACAA`)+`data`; // 8000 Hz, 8-bit single channel 
+	d = `RIFF=newWAVEfmt `+atob(`EAAAAAEAAQCAPgAAgD4AAAEACAA`)+`data`; // 16000 Hz, 8-bit single channel 
+	//d = `RIFF=newWAVEfmt `+atob(`EAAAAAEAAQAAQAAAAEAAAAEACAA`)+`data`; // 16384 Hz, 8-bit single channel 
+
+	// tempo
+	// q = 256;
+	
+	// volume auto
+	u = 1;
+	v = [];
+	for (i=0; i<w<<8; ++i) {
+		x = i>>8;
+		for (j=y=0; y<h;++y) {
+			// carrier frequency for 16 kHz sample, from C1 (h-1=191) to B8 (1), one note (halftone) every two pixels
+			t = i*11/800*Math.pow(2,(h-67-y)/24);
+			// elementary waves generated in [0..1] then scaled up to [0..255] with pixel intensity
+			// splitting the definition on three lines compresses better than a single line containing p+=(everything)
+			// red : sawtooth wave
+			j += s[4*x+4*w*y]*(t%1);
+			// green : sine wave
+			j += s[4*x+4*w*y+1]/2*(Math.sin(2*Math.PI*t)+1);
+			// blue : square wave
+			j += s[4*x+4*w*y+2]*(Math.sin(2*Math.PI*t)>0?1:0); 
+		}
+		u = Math.max (u,j);	
+		v.push(j);
+	}
+	
+	
+	// tested as a oneliner with reduce() in the Audio definition, eliminating variable d entirely
+	// a = new Audio(`data:audio/wav;base64,`+btoa(v.reduce((i,j)=>i+String.fromCharCode(0|1+j*254/u),`RIFF=newWAVEfmt `+atob(`EAAAAAEAAQBAHwAAQB8AAAEACAA`)+`data`)));
+	// the loop compresses better (-3 bytes)
+	for (i=0; i<w<<8; ++i) 
+		d+=String.fromCharCode(0|1+v[i]*254/u); // workaround for FF as strings containing value 0 sometimes will not play
+	
+
+	a = new Audio(`data:audio/wav;base64,`+btoa(d));
+	a.play(U(d=Date.now(X=-2)));
+	
+}
+
+
+// recursively draw an element of the fractal (IFS)
+/*
+D = (x,y,z,l) => {	
+	if (l) {
+		c.save();
+		c.translate(x,y);
+		D(0, 0, z/3, l-1);
+		c.translate(z/3, 0);
+		c.rotate(I);
+		D(0, 0, z/3, l-1);
+		c.rotate(J-I);
+		D(0, 0, z/3, l-1);
+		c.translate(z/3, 0);
+		c.rotate(-J);
+		D(0, 0, z/3, l-1);
+		c.restore();
+	} else {
+		c.beginPath();
+		c.moveTo(x,y);
+		c.lineTo(x+z,y);
+		c.stroke();
+	}
+}
+*/
+
+// Gumowski-Mira main function
+/*
+F = z => I*z+2*(1-I)*z*z/(1+z*z);
+*/
+// Draw the built-in image
+C = e => 
+{
+	w=256;h=192;
+	c.fillStyle = `#000`;
+    c.fillRect(0,0,w,h); // full black (silence)
+	 
+	/*
+	/////// LORENTZ ATTRACTOR ////////////
+	c.fillStyle = `rgba(255,255,255,.7)`;
+	x=y=z=.1; step=.05;
+	for (i=0;i<16000;++i)
+	{
+		c.fillRect(w/2+.6*(x-z),h/2+y-.6*z,1,1);
+		xn = x + step*(-y-z);
+		yn = y + step*(x+.1*y);
+		zn = z + step*(.1+z*(x-14));
+		x=xn;y=yn;z=zn;
+	} 
+	*/
+
+	//////  IFS ///////////
+	
+	/*
+	c.strokeStyle = `#0f0`;
+	I = Math.sin(I+J);
+	J = Math.cos(1+I-J);
+	
+	D(0, 48, 160, 6);
+	*/
+	
+	//////// PETER DE JONG ATTRACTOR /////////
+	//c.fillStyle = `rgba(0,255,0,.1)`;
+	/*
+	x=y=1;
+	K=I+J;
+	L=I-J;
+	M=I*J;
+	N=Math.sin(I)+J;
+	//I= 0.970, J = -1.899, K = 1.381,L = -1.506;
+	//I= 1.4, J = -2.3, K = 2.4, L = -2.1;
+	//I=2.01, J = -2.53, K = 1.61, L = -0.33;
+	//I = -2.7, J = -0.09, K = -0.86, L = -2.2;
+	//I = -0.827, J = -1.637, K = 1.659, L = -0.943;
+
+	for (i=5e5;--i;) {
+	
+		nx = Math.sin(I*y)-Math.cos(J*x);
+		ny = Math.sin(K*x)-Math.cos(L*y);
+		z = Math.sin(M*x)-Math.cos(N*y);
+		
+		x=nx; y=ny;
+		c.fillStyle=`hsl(${180+90*z},100%,50%)`;
+		c.fillRect(w/4*(2+x), h/4*(2+y), 1, .1);
+	}
+
+	I = 2*Math.sin(I+J);
+	J = 2*Math.cos(1+I-J);
+	*/
+	
+	///////  COMANCHE-LIKE GROUND /////////////
+	
+	m = c.getImageData(u=x=y=t=0,0,w,w); p=m.data;			// Get a 256x256 square, the white border on the bottom is ignored
+	
+	for (n=0;++n-1e5;t=13*t+u+r+9*Math.cos(t)&-1) {			// Reuse the plasma / terrain generation from 2013 entry - Comanche
+		x+=[0,1,0,-1][t&3];									// red
+		y+=[0,1,0,-1][3-t&3];
+		for (i=0;++i-6;) for(j=0;++j-6;)						
+			++p[w*4*(y+j&255)+4*(x+i&255)+u];							
+	} 
+	++u;
+	for (n=0;++n-1e5;t=13*t+u+r+9*Math.cos(t)&-1) {			// green
+		x+=[0,1,0,-1][t&3];												
+		y+=[0,1,0,-1][3-t&3];
+		for (i=0;++i-6;) for(j=0;++j-6;)						
+			++p[w*4*(y+j&255)+4*(x+i&255)+u];							
+	}
+	++u;
+	for (n=0;++n-1e5;t=13*t+u+r+9*Math.cos(t)&-1) {			// blue
+		x+=[0,1,0,-1][t&3];												
+		y+=[0,1,0,-1][3-t&3];
+		for (i=0;++i-6;) for(j=0;++j-6;)						
+			++p[w*4*(y+j&255)+4*(x+i&255)+u];							
+	}
+	++u;
+	c.putImageData(m,0,0);                                  // trick : values are capped at 255,
+	r *= 3.94*(1-r);										// logistic map in its chaotic phase as pseudorandom
+	
+	
+	/////// NEBULA //////////
+	/*
+	galaxy = [];
+	for (i=0;i<10000;++i) {
+		galaxy.push([2*Math.random()-1, 2*Math.random()-1, 0, 0]);
+	}
+	for (i=0;i<7000;++i) {
+		for (k=0;k<4;++k) {
+			x = [.4, -.6, 1, -1][k];
+			y = [1, 0, -1, 2][k];
+			for (j=0;j<10000;++j) {
+				var dist2 = Math.max(.03,(x-galaxy[j][0])*(x-galaxy[j][0])+(y-galaxy[j][1])*(y-galaxy[j][1]));
+				galaxy[j][2] += .1*(x-galaxy[j][0])/dist2;
+				galaxy[j][3] += .1*(y-galaxy[j][1])/dist2;
+			}
+		}
+		for (j=0;j<10000;++j) {
+			galaxy[j][0] += .1*galaxy[j][2];
+			galaxy[j][1] += .1*galaxy[j][3];
+		}
+	}
+	c.globalCompositeOperation="lighter";
+	c.fillStyle=`rgba(20,20,255,.2)`;
+	for (j=0;j<10000;++j) {
+		c.beginPath();
+		c.arc(w/4*(2+galaxy[j][0]), h/4*(2+galaxy[j][1]), 2, 0, 7);
+		c.fill();
+	}
+	c.globalCompositeOperation="source-over";
+	*/
+	/////// GUMOWSKI - MIRA CURVE ////////////
+	/*
+	c.fillStyle = `#fff`;
+	x= 4, y=.265;
+	for (i=0;i<9000;++i) {
+	
+		nx = J*y+F(x);
+		ny = -x+F(nx);
+		
+		x = nx; y=ny;
+		c.fillRect(w/2+3*x, h/2+3*y, 1, 1);
+	}
+	*/
+	//////////// TWO-LINE GUITAR /////////////
+	/*
+	for (j=0; j<h; ++j) 
+	{
+		for (i=0;i<w;++i)
+		{
+			r=j==96-22||j==96-18?1-2*i/w:-1;
+			g=0/Math.sqrt(i+1)-1;
+			b=r;
+			c.fillStyle = `rgb(${Math.floor(127+127*r)},${Math.floor(127+127*g)},${Math.floor(127+127*b)})`;
+			c.fillRect(i,j,1,1);
+		}
+	}*/
+	
+	T(); // turn image to sound
+
+} // end initial draw
+
+
+
+B = document.createElement`button`;							
+b.insertBefore(B,a);										// Add New button to page
+B.textContent=`New`;
+B.onclick = C;												// When clicked, call C() to generate a new image & sample
+
+A = B = document.createElement`input`;
+b.insertBefore(B,a);										// Add File input control to page
+B.type = `file`;											// reused from 2017 entry - Watercolor Artist
+B.onchange = e=> {
+  f = new FileReader;
+  f.onload = e=> {
+	m = document.createElement`img`;
+    m.src = f.result;
+    m.onload = e=> {
+      c.fillStyle = `#fff`;
+      c.fillRect(0,0, w, h); 								// clear the previous drawing, reset to white
+      w = m.width; 
+      h = Math.min(192,m.height);
+      c.drawImage(m, 0, 0);
+	  T();
+    }
+  };
+  f.readAsDataURL(A.files[0])
+};
+
+B = document.createElement`button`;
+b.insertBefore(B,a);										// Add Play button to page
+B.textContent=`Play`;
+B.onclick = e=> a.play(U(d=Date.now(X=-2)));				// When clicked, play the current sample
+
+
+C(r=.1); 													// generate initial image and sound
+
+// Inspired by :
+// http://www.skytopia.com/software/sonicphoto/
+// https://www.youtube.com/watch?v=8BGr1u-Oz8M
+// http://photosounder.com
+// https://www.youtube.com/watch?v=W8MCAXhEsy4
+
+      // END
+    </script>
+  </body>
+</html>
