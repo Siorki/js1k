@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+	<head>
+		<title>JS1k, [COMPO] demo submission [ID]</title>
+		<meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; padding: 0; border: 0; }
+      #c { display: block; } /* kill scrollbars from hell */
+    </style>
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+			var a = document.getElementsByTagName('canvas')[0];
+			var b = document.body;
+      var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+      // unprefix some popular vendor prefixed things (but stick to their original name)
+      var AudioContext =
+        window.AudioContext ||
+        window.webkitAudioContext;
+      var requestAnimationFrame =
+        window.requestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function(f){ setInterval(f, 1000/30); };
+      // stretch canvas to screen size (once, wont onresize!)
+      a.style.width = (a.width = innerWidth) + 'px';
+      a.style.height = (a.height = innerHeight) + 'px';
+
+      var c = a.getContext('2d');
+		</script>
+		<script>
+debug = document.getElementById("debug");
+debug.style.color="red";
+frame=0; t0 = new Date();	// FPS measure only
+
+		
+// start of submission //
+
+
+// creation of soundtrack
+// 33956 Hz chosen as sampling rate to have a power of two (8192) as note length
+A = new AudioContext({sampleRate:33956});
+// 4e6 = 4 000 000 = 15 patterns * 32 notes each * 8192 samples, plus a little extra to decay the last note
+B = A.createBuffer(1,4e6,33956);
+C = B.getChannelData(0);
+
+v = [z=-1];	// buffer for delay line (length y)
+			// setting z to -1 as a shortcut to initialize t,e,z at the first execution of the main loop
+for (i=0; i<4e6; C[++i] =v[x%y] /*+ .3*snare + .3*drum*/) {
+
+	// Blood Money ingame
+	// pattern = 32 notes = 7.7s
+	// main instrument : volume increases with time, harmonics 1 (100%) and 2 (30 to 40%)
+	
+	// 7 (removed in demo): a4,,a4,,a4,,a4,g4,,f4,,e4,,d4,e4,f4,g4,,g4,f4,g4,,f4,e4,,e4,,e4,,f4,,g4,
+	// 5 : a4,,a4,,a4,,a4,g4,,f4,,e4,,f4,,,g4,,g4,,g4,,f4,e4,,e4,,e4,e4,e4,f4,f4,
+	// 3 : f4,,e4,,d4,,c4,d4,,,,,,,c4,,d4,,,,e4,,f4,e4,,,,,,,,,
+	// 5 : a4,,a4,,a4,,a4,g4,,f4,,e4,,f4,,,g4,,g4,,g4,,f4,e4,,e4,,e4,e4,e4,f4,f4,
+	// 3 : f4,,e4,,d4,,c4,d4,,,,,,,c4,,d4,,,,e4,,f4,e4,,,,,,,,,
+	// 9 : e4,f4,e4,a4,e4,a4,e4,a4,,f4,e4,f4,,e4,,f4,g4,f4,e4,g4,f4,e4,d4,e4,,e4,,,,,,,
+	// 8 : e4,f4,e4,a4,e4,f4,e4,a4,,f4,e4,f4,,e4,,f4,g4,f4,e4,g4,f4,e4,d4,e4,,,,,,f4,,e4,
+	// 10 : a4,,a4,,a4,,a4,g4,,f4,,,g4,f4,g4,a4,g4,,g4,f4,g4,,f4,e4,,,,,e4,e4,f4,f4,
+	// 10 : a4,,a4,,a4,,a4,g4,,f4,,,g4,f4,g4,a4,g4,,g4,f4,g4,,f4,e4,,,,,e4,e4,f4,f4,
+	// 3 : f4,,e4,,d4,,c4,d4,,,,,,,c4,,d4,,,,e4,,f4,e4,,,,,,,,,
+	// 9 : e4,f4,e4,a4,e4,a4,e4,a4,,f4,e4,f4,,e4,,f4,g4,f4,e4,g4,f4,e4,d4,e4,,e4,,,,,,,
+	// 8 : e4,f4,e4,a4,e4,f4,e4,a4,,f4,e4,f4,,e4,,f4,g4,f4,e4,g4,f4,e4,d4,e4,,,,,,f4,,e4,
+	// 12 : a4,,,,,,,,f4,,,,,,,,,f4,e4,f4,g4,,,,,a4,g4,f4,g4,f4,e4,f4,
+	// 12 : a4,,,,,,,,f4,,,,,,,,,f4,e4,f4,g4,,,,,a4,g4,f4,g4,f4,e4,f4,
+	// 11 : f4,,e4,,d4,,c4,d4,,,,,,,,f4,g4,,f4,d4,e4,f4,e4,g4,,g4,f4,e4,e4,f4,e4,f4,
+	// 11 : f4,,e4,,d4,,c4,d4,,,,,,,,f4,g4,,f4,d4,e4,f4,e4,g4,,g4,f4,e4,e4,f4,e4,f4,
+
+	// silences encoded as "0" (charCode 48) => u==0
+	// access beyond the string size returns undefined, which also coerces as false in the expression below
+	u = "<0<0<0<:08070800:0:0:0870707778880705035000000305000708700000000<0<0<0<:08070800:0:0:0870707778880705035000000305000708700000000787<7<7<08780708:87:875707000000787<787<08780708:87:875700000807<0<0<0<:0800:8:<:0:8:08700007788<0<0<0<:0800:8:<:0:8:0870000778880705035000000305000708700000000787<7<7<08780708:87:875707000000787<787<08780708:87:875700000807<0000000800000000878:0000<:8:878<0000000800000000878:0000<:8:8788070503500000008:085787:0:8778788070503500000008:085787:0:877878".charCodeAt(i>>13)-48;
+	x = i&8191;
+	
+	// Guitar sound simulated with Karplus-Strong algorithm
+	u && 	// if (u>0)
+		(y = 0|33956 / 55 / 2**(u/12));	// buffer length depends on current note
+
+	// Initialize the delay line buffer with x**2.2/11%1 as pseudorandom, which defines the timbre
+	// Then use a lowpass filter after
+	v[x%y] = u && y>x ? x**2.2/11%1 : .9*v[x%y]+.1*v[(x+1)%y];
+
+	// drum loop that did not make it in
+	//drum = (((i&32768?1e4:1e3)/(i&32767))&1);
+	//snare = ((Math.sqrt((i+32768)%65536)<<6)/255)%1;
+}
+
+w=A.createBufferSource();
+w.buffer=B;
+w.connect(A.destination);
+
+// creation of shade bobs (used as brushes afterwards)
+s = a.cloneNode();
+cc = s.getContext("2d");
+cc.fillStyle = r = cc.createRadialGradient(15, 15, 7, 15, 15, 15);
+r.addColorStop(0, "#000c18"); // hue 210
+r.addColorStop(1, "#000");
+cc.fillRect(0,0,30,30);
+cc.translate(30,0);
+cc.fillStyle = r = cc.createRadialGradient(15, 15, 7, 15, 15, 15);
+r.addColorStop(0, "#180c00"); // hue 30
+r.addColorStop(1, "#000");
+cc.fillRect(0,0,30,30);
+cc.translate(30,0);
+cc.fillStyle = r = cc.createRadialGradient(15, 15, 7, 15, 15, 15);
+r.addColorStop(0, "#0c0018"); // hue 270
+r.addColorStop(1, "#000");
+cc.fillRect(0,0,30,30);
+cc.translate(30,0);
+cc.fillStyle = r = cc.createRadialGradient(15, 15, 7, 15, 15, 15);
+r.addColorStop(0, "#0c1802"); // hue 93
+r.addColorStop(1, "#000");
+cc.fillRect(0,0,30,30);
+cc.translate(30,0);
+cc.fillStyle = r = cc.createRadialGradient(15, 15, 7, 15, 15, 15);
+r.addColorStop(0, "#18000c"); // hue 330
+r.addColorStop(1, "#000");
+cc.fillRect(0,0,30,30);
+cc.translate(30,0);
+w.start();
+	
+
+
+setInterval( D => {
+
+	// synchronize with music, twice every pattern (16 notes, as one pattern is 32 notes)
+	// 33956/131072, round to .259
+	
+	(A.currentTime*.259|0)>z &&  // if ((A.currentTime*.259|0)> z)
+		(e=1+2*++z,t=0);
+	
+	
+	c.globalCompositeOperation="source-over";
+	// repaint canvas and bobs every step so we can animate them. First clear the background, flashing it at every sync point
+	c.fillStyle="hsl(0,0%,"+Math.max(0,100-9*t)+"%)";
+	c.fillRect(0, 0, a.width, a.height);
+	c.globalCompositeOperation="lighter";
+	D=20+z%4*t/15;	// bob size : zoom in
+
+	// Hopalong formula initialization
+	v = .99+.01*Math.sin(e);
+	u = Math.cos(1+7*e);
+	x=4;
+	y=.265;
+	
+	for (i=0; i<2048 && ++i<32*t; c.drawImage(s, e%5*30, 0, 30, 30, (y+x)*D-D/2+.5*a.width, a.height/2+(y-x)*D-D/2, D, D)) 	
+		// Hopalong formula
+		[x,y] = [y-Math.sign(x)*Math.abs(u*x+v)**.5, -x];
+
+	++e; // after 2048 bobs, change the color (e) and the parameters of the formula
+	D=40-z%4*t/15; // bob size : zoom out
+	v = .99+.01*Math.sin(e);
+	u = Math.cos(1+7*e);
+	x=4;
+	y=.265;
+	
+	
+	for (i;++i<32*t; c.drawImage(s, e%5*30, 0, 30, 30, (y+x)*D-D/2+.5*a.width, a.height/2+(y-x)*D-D/2, D,D)) 		
+		// Hopalong formula
+		[x,y] = [y-Math.sign(x)*Math.abs(u*x+v)**.5, -x];
+		
+	++t; --e;
+	
+}, 20)
+
+// end of submission //
+		</script>
+	</body>
+</html>
