@@ -1,0 +1,134 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<style type="text/css">
+
+body {
+  background-color: #000;
+}
+
+#cube {
+    width: 400px;
+    height: 400px;
+    top: 250px;
+    transform-style: preserve-3d;
+    margin: auto;
+    position: relative;
+}
+#cube > div {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+}
+#side1 {
+    transform: rotatex(90deg) translateZ(200px);
+}
+#side2 {
+    transform: rotateY(-90deg)  translateZ(200px);
+}
+#side3 {
+    transform: translateZ(200px);
+}
+#side4 {
+    transform: rotateY(90deg) translateZ(200px);
+}
+#side5 {
+    transform: rotateY(180deg) translateZ(200px);
+}
+#side6 {
+    transform: rotateX(-90deg) translateZ(200px);
+}
+
+</style>
+</head>
+<body>
+<div id="debug"></div>
+    <div id="cube">
+        <div id="side1"></div>
+        <div id="side2"></div>
+        <div id="side3"></div>
+        <div id="side4"></div>
+        <div id="side5"></div>
+        <div id="side6"></div>
+        <div id="light"></div>
+    </div>
+
+</body>
+<script language="javascript">
+var t=0;
+var scene = document.getElementById("cube");
+
+light = (c,x,y,z,xe,ye,ze) => {
+  var h=160+30*c; // facet hue
+  var intensity = z>200 ? 30000/(200+z) : 16; 
+  var falloffDist = z>200 ? 2*(z-200) : 16; // 4.h in pixels, 100% width/height = 200 pixels
+  var f = 1600;
+  var k = (z-200)/(z-200+ze-200);
+  var xs = x+k*(-200*xe/ze-x);
+  var ys = y-k*(-200*ye/ze+y);
+  /*
+  if (t<400) { // first sequence : wireframe - removed from final demo to fit in 1024b
+    scene.children[c].style.border = t<400?`4px solid #080`:``; 
+    scene.children[c].style.background = ``;
+  } else */if (t<400) { // 2nd sequence : flat shading, remove border
+    //scene.children[c].style.border = ``;
+    scene.children[c].style.background = `hsl(${h},100%,16%)`;
+  } else if (t<800) { // 3nd sequence : dynamic flat shading
+    scene.children[c].style.background = `hsl(${h},100%,${z>200?30*Math.tan(Math.atan2(x+200,z-200)/2-Math.atan2(x-200,z-200)/2)*Math.tan(Math.atan2(y+200,z-200)/2-Math.atan2(y-200,z-200)/2)+16:16}%)`;
+  } else if (t>1600 && c==5) { // 5th sequence : animated texture on one facet
+    scene.children[c].style.background = `repeating-linear-gradient(
+      0deg,
+      hsla(240,100%,100%,50%) 50px,
+      hsla(240,100%,50%,50%) 90px,
+      hsla(240,100%,100%,50%) 150px
+    ), repeating-linear-gradient(
+      45deg,
+      hsla(0,100%,0%,100%) 0px,
+      hsla(0,100%,50%,100%) 70px,
+      hsla(0,100%,0%,100%) 140px
+    )`;
+    scene.children[c].style.backgroundPosition = `${400*Math.cos(t/40)}px ${400*Math.sin(t/40)}px`;
+        
+    } else { // 4th sequence : Phong shading
+    var specular = z>200&&t>1600?"radial-gradient(at "+(xs+200)+"px "+(ys+200)+"px, white, transparent "+(3000/z)+"%), ":"";
+    scene.children[c].style.background = specular+"radial-gradient(at "+(x+200)+"px "+(200+y)+"px, hsl("+h+",100%,"+intensity+"%), hsl("+h+",100%,16%) "+falloffDist+"%)";
+  }
+  
+};
+
+delta=1;
+
+setInterval(()=>{
+  var angle=.01*t;    // light
+  var angleX=-t/200;  // viewpoint theta
+  var angleY=-t/640;  // viewpoint phi
+  t+=delta;
+
+  var lx = 350*Math.sin(t/40);
+  var ly = -350*Math.cos(t/40);
+  var lz = 350*Math.cos(t/200);
+  
+  var f = 1600;  // focal
+  var xe = f*Math.cos(angleX)*Math.sin(angleY);
+  var ye = f*Math.sin(angleX);
+  var ze = f*Math.cos(angleX)*Math.cos(angleY);
+
+
+  light(0, lx, lz, -ly, xe, ze, -ye);
+  light(1, lz, ly, -lx, ze, ye, -xe);
+  light(2, lx, ly, lz, xe, ye, ze);
+  light(3, -lz, ly, lx, -ze, ye, xe);
+  light(4, -lx, ly, -lz, -xe, ye, -ze);
+  light(5, lx, -lz, ly, xe, -ze, ye);
+  
+  scene.style.transform = "rotateX("+angleX+"rad) rotateY("+angleY+"rad)";
+  scene.children[6].style.transform = "translateX("+lx+"px) translateY("+ly+"px) translateZ("+lz+"px) rotateY("+(-angleY)+"rad) rotateX("+(-angleX)+"rad)";
+  if (t==400) {
+    scene.children[6].style.background = "radial-gradient(white 20px, transparent 40px)";
+  }
+  //document.getElementById("debug").innerHTML="lx="+Math.floor(lx)+" ly="+Math.floor(ly)+" lz="+Math.floor(lz)+" xe="+Math.floor(xe)+" ye="+Math.floor(ye)+" ze="+Math.floor(ze);
+}, 20);
+
+document.onkeydown = e => { delta = 1-delta; }
+</script>
+</html>
