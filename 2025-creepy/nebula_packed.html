@@ -1,0 +1,129 @@
+<!doctype html>
+
+<head>
+<title>work in progress ~ js1024</title>
+<meta name="author" content="author">
+<meta name="description" content="description">
+<meta name="title" content="title">
+<meta charset=utf-8>
+</head>
+
+<body id=b>
+<canvas id=a></canvas>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    #a {
+        position: relative;
+        display: block;
+    }
+    
+    .play {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%)translateY(-50%);
+        font-size: 30px;
+        font-family: arial, sans-serif;
+        background: #f3f4f5;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    /* for mobile */
+    :root {
+        touch-action: pan-x pan-y;
+        height: 100%;
+    }
+</style>
+
+<script>
+    // Entry configuration
+    // ===================
+
+    var title = "title";
+
+    // Shim setup and polyfills (do not edit)
+    // ======================================
+
+    a = document.getElementById("a");
+    a.width = innerWidth;
+    a.height = innerHeight;
+
+    b = document.getElementById("b");
+
+    c = a.getContext("2d");
+    d = document;
+
+    var M = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); // detects if the user is on mobile
+
+    if (M) {
+        a.oncontextmenu = function(e) {
+                e.preventDefault();
+            } // prevents context menu on mobile
+    }
+
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+    a.requestPointerLock = a.requestPointerLock || a.mozRequestPointerLock || a.webkitRequestPointerLock;
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    if (typeof OscillatorNode !== 'undefined' && OscillatorNode.prototype) {
+        OscillatorNode.prototype.start = OscillatorNode.prototype.start || OscillatorNode.prototype.noteOn;
+        OscillatorNode.prototype.stop = OscillatorNode.prototype.stop || OscillatorNode.prototype.noteOff;
+    }
+
+    // Add a start button if sound is present in the code
+    onload = () => {
+        var entry_code = entry.innerText;
+        var has_sound = false;
+        if(entry_code.includes('eval')) {
+            try {
+                parent.eval(entry_code.replace(/eval\(/g, 'throw(').replace(/eval\`/g, 'throw`'));
+            }
+            catch(e){
+                entry_code = e;
+            }
+        }
+        
+        try {
+        if(entry_code.includes("AudioContext")||entry_code.includes("Oscillator")||entry_code.includes("speak")||entry_code.includes("play")||entry_code.includes("autoplay")){
+            b.insertAdjacentHTML("beforeEnd", "<button class='play' onclick='start_demo(this)'>PLAY</button>");
+        } else {
+            parent.eval(entry.innerText);
+        }
+        } catch(e) {
+            // I have no idea what this does but I think it will make demos that contain eval naturally (no compressor used) work
+            entry_code = entry.innerText;
+            parent.eval(entry_code);
+        }
+    };
+
+    // Makes the "window." be optional in the demo code
+    function start_demo(button) {
+        console.log(entry.innerText);
+        parent.eval(entry.innerText);
+        button.remove();
+    }
+
+    console.log(
+        a, // canvas
+        b, // body
+        c, // 2D canvas context
+        d // document
+    );
+</script>
+
+<script type=text id=entry>
+// Your entry goes here 👇
+// =======================
+
+for(_='"#$;c7);DDcz00~~0GDw.addColorStop(FF1,$G0k"k~"zjMath.BBmax(ABcos(@]=L[c.KKgCL"JightV.heV=U/8~),T;++Zw=cY;C=Xer`Kda](a_|0)+"%^/2Q=1P=2OinN0,64,6432,x,y;s=(t-i[0]).width=aKcR](s*2fyL$G"7KfyLw7Nn`WidthA25~-t)+QZi)c_2,t,.getContext("2d"*/512*BsN(Kfc](for(icJsource-ov`"7KzJlV`";	Brandom()=document.createElement("canvas"Da,Nn`HeV3~*(i&3)+3~tT/i/i,DOG;--i;){xO4~*;yP9~*-3~BmN(250t)T0;Y2~F$ff8"F.1,$a62jyx,2D0*Babs(C-.5Dh=C>.5?2~:30;Y2,s/4,,sF"hsl("+[h,(r^",(l^)"]k"z22x-s,y-s,,)}a222U4G72=a2Da444U512; N c4=a4))c[i[0]+i[6]Li72K24~4GDs*s*8XXC*C;rP~;lP~-6+2G48X(1-@x/96))Q;l=5;rP0E=[];=-3G;t=iZi)E.push([i,6.28*]DY416,32F$140e08j44DsetInt`val(()=>{	 of E){r=A24,240-4*BsqrtDg=i[1]-P/rBmN(8+rQ/8z_4,,+(r*@g)-s)Q+(rg)-)Q,)};ba](z.arc(Q/43.2,0z.fill(	P;i<5O;i<202G+xO~;y=60x-O0t/80Dy-OE[t%3G][0LtZt},40)';G=/[-N-Q^-`X-ZT-VJ-L@-BjkFG~zD7$]/.exec(_);)with(_.split(G))_=join(shift());eval(_)
+ 
+// =======================
+</script>
+</body>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>JFireworks over water - hand minified version</title>
+		<meta charset="utf-8">
+	</head>
+ 	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+				var a = document.getElementsByTagName('canvas')[0];
+var b = document.body;
+var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+// unprefix some popular vendor prefixed things (but stick to their original name)
+var AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+var requestAnimationFrame =
+window.requestAnimationFrame ||
+window.mozRequestAnimationFrame ||
+window.webkitRequestAnimationFrame ||
+window.msRequestAnimationFrame ||
+function(f){ setTimeout(f, 1000/30); };
+ 
+// fix bug in safari: http://qfox.nl/weblog/218
+document.body.clientWidth;
+// auto resize (original) canvas. call `onresize(w,h) to limit the size of the canvas
+(window.onorientationchange = window.onresize = function(a){
+var mw = Infinity;
+var mh = Infinity;
+var min = Math.min;
+ 
+return function(w,h){
+if (arguments.length === 2) {
+mw = w;
+mh = h;
+}
+a.style.width = (a.width = min(mw, innerWidth)) + 'px';
+a.style.height = (a.height = min(mh, innerHeight)) + 'px';
+};
+}(a))();
+ 
+var c = a.getContext('2d');
+// THIS IS WHERE YOUR DEMO GOES
+	  
+// framerate
+b.appendChild(debug = document.createElement("div"));
+debug.style.position="absolute";
+debug.style.top="5px";
+debug.style.color="#F88";
+debug.style.zIndex=255;
+frame=0; t0 = new Date();	// FPS measure only
+
+/* Variables
+ * 
+ * f fall speed of the current triangle
+ * g rotation angle along Y (in projection function j)
+ * h rotation angle along X (in projection function j)
+ * i loop variable for triangle array
+ * j projection function
+ * n (0 or 1) triangle orientation, pointing up or down
+ * p triangles / polygons to display, array [x, y, z-index], z-index influences fall time
+ * r Y coordinate of current vertex in projection function
+ * s Y coordinate of current vertex (or of triangle horizontal edge in projection function)
+ * t time
+ * u Z coordinate of current vertex, also used as time for its fall. X coordinate for reflection on water.
+ * v pixel image data of canvas during init. Y coordinate for reflection on water.
+ * x X coordinate of current vertex
+ */
+ 
+// submission begin
+b.appendChild(aa = a.cloneNode());
+ac = aa.getContext('2d');
+aa.style.position='fixed';
+aa.style.top='8px'; // align both canvas, overlaid one on top of another
+
+// Get the pixels composing the text "js1024" and store them into p[]
+ac.fillStyle='#fff';
+ac.font='40pt bold Verdana';			
+ac.fillText('js1024',-2,40);
+v = ac.getImageData(0,0,256,80).data;
+
+p = [];
+for (n=t=0;n<12800;++n)
+	v[n*4+3]&&p.push(n%256-80, n>>8, 20*Math.random(),1);
+	
+
+k = Math.floor(a.height/4);
+e = c.getImageData(0,3*k,a.width,k);
+m = e.data;
+
+
+/**
+ * 3D to 2D projection
+ * @param x X coordinate of the vertex
+ * @param r Y coordinate of the vertex
+ * @param u Z coordinate of the vertex / fall delay
+ * @param s reference fall start of the triangle (equal to Y for its horizontal edge)
+ * @return [pixel X coordinate, pixel Y coordinate]
+ */
+j = (x, r, u, s) => 
+	// rotation angle along Y
+	// t in [0, 60] : -1.4 Slightly off axis (not -1.57) so triangles are not completely hidden
+	// t in [60, 515] : -1.4 to 0 Rotate almost 1/4 turn to realign perpendicular to the text plane
+	// t above 515 : constant 0
+	//g = 1.4*(t<60?-1:(t<515?Math.min(0, Math.sin((t-60)/300)-1):0));
+	
+	// rotation angle along X
+	//h = u*Math.max(0,500-t)/1000;
+	//f = Math.max(0,t/10-90-s-u)/4;
+	[a.width/2+8*(Math.cos(1.4*(t<60?-1:(t<515?Math.min(0, Math.sin((t-60)/300)-1):0)))*x-r*Math.sin(u*Math.max(0,500-t)/1000)*Math.sin(1.4*(t<60?-1:(t<515?Math.min(0, Math.sin((t-60)/300)-1):0)))), a.height/2+8*(Math.cos(u*Math.max(0,500-t)/1000)*r+(Math.max(0,t/10-90-s-u)/4)**2)];
+
+
+setInterval(() => {
+	//c.fillStyle='#000';
+	//c.fillRect(0,-a.height,a.width,a.height);
+	ac.fillStyle="rgba(0,0,0,"+Math.max(1-t/500, .2)+")"; // black background, slightly transparent so triangles leave trails
+	ac.fillRect(0,0,a.width,3*k);
+	ac.clearRect(0,3*k,a.width,k); // hack : keep the bottom quarter translucent to see the second canvas
+	for (n=i=0; i<p.length; n=1-n) {
+		x = p[i++];
+		s = p[i++]-40+Math.max(0, 500-t)/10; // radial offset from the center line, from 50 (tube) to 0 
+		u = p[i++];
+		if (p[i++]) {
+		
+			f = Math.max(0,t/10-90-s-u)/4;
+			ac.fillStyle='hsl('+(180+f*6)+',100%,'+(100-f*6)+'%)';
+			ac.beginPath();
+			ac.moveTo(...j(x-1,s+n,u, s));
+			ac.lineTo(...j(x+1,s+n,u, s));
+			ac.lineTo(...j(x,s+1-n,u, s));
+			ac.fill();
+			// hide triangles that fall into water
+			if (f>0&&s+f*f>a.height/27)  // exact value 3/80 
+				p[i-1]=0;
+			
+		}
+	}
+	w = ac.getImageData(0,0,a.width,a.height).data;
+	for (y = t&1; y<k; y+=2) {  // interlace for faster rendering
+		for (x=0; x<a.width; ++x) {
+			
+			//u = Math.min(Math.max(0, Math.floor(x+5*Math.sin(t/20+y/9)+4*Math.sin(t/5+y/3))), a.width-1);
+			//v = Math.min(Math.max(0, Math.floor(a.height-y*4+15*Math.sin(t/10-x/20+y/7)+7*Math.sin(t/6-x/5))), a.height-1);
+			
+			u = Math.min(Math.max(0, Math.floor(a.height-y*4+15*Math.sin(t/10-x/20+y/7)+7*Math.sin(t/6-x/5))), a.height-1)*a.width*4+Math.min(Math.max(0, Math.floor(x+5*Math.sin(t/20+y/9)+4*Math.sin(t/5+y/3))), a.width-1)*4;
+			m[y*a.width*4+x*4] = w[u++];
+			m[y*a.width*4+x*4+1] = w[u++];
+			m[y*a.width*4+x*4+2] = Math.max(80,w[u++]);
+			m[y*a.width*4+x*4+3] = 255; // fully opaque
+		}  
+	}
+	c.putImageData(e, 0, 3*k);
+	++t;
+
+	++frame;
+	var frameRate= 1000*frame / (new Date() - t0);
+	debug.innerHTML="time="+t+", frameRate="+frameRate;
+
+}, 10)
+
+      // END
+		</script>
+
+</body></html>

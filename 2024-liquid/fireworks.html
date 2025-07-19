@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>FIreworks over water - original code</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+				var a = document.getElementsByTagName('canvas')[0];
+var b = document.body;
+var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+// unprefix some popular vendor prefixed things (but stick to their original name)
+var AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+var requestAnimationFrame =
+window.requestAnimationFrame ||
+window.mozRequestAnimationFrame ||
+window.webkitRequestAnimationFrame ||
+window.msRequestAnimationFrame ||
+function(f){ setTimeout(f, 1000/30); };
+ 
+// fix bug in safari: http://qfox.nl/weblog/218
+document.body.clientWidth;
+// auto resize (original) canvas. call `onresize(w,h) to limit the size of the canvas
+(window.onorientationchange = window.onresize = function(a){
+var mw = Infinity;
+var mh = Infinity;
+var min = Math.min;
+ 
+return function(w,h){
+if (arguments.length === 2) {
+mw = w;
+mh = h;
+}
+a.style.width = (a.width = min(mw, innerWidth)) + 'px';
+a.style.height = (a.height = min(mh, innerHeight)) + 'px';
+};
+}(a))();
+ 
+var c = a.getContext('2d');
+// THIS IS WHERE YOUR DEMO GOES
+	  
+// framerate
+b.appendChild(debug = document.createElement("div"));
+debug.style.position="absolute";
+debug.style.top="5px";
+debug.style.color="#F88";
+debug.style.zIndex=255;
+frame=0; t0 = new Date();	// FPS measure only
+
+// submission begin
+var aa = a.cloneNode();
+var ac = aa.getContext('2d');
+b.appendChild(aa);
+aa.style.position="fixed";
+aa.style.top="8px";
+
+c.fillStyle='#fff'; // hide the text, white on white background
+c.font="40pt bold Verdana";			
+c.fillText("js1024",-2,40);
+var data = c.getImageData(0,0,256,80).data;
+
+var mirrorHeight = Math.floor(a.height/4);
+var targetImageData = c.getImageData(0,3*mirrorHeight,a.width,mirrorHeight);
+var targetBitmap = targetImageData.data;
+
+var time = 0;
+var triangles = [];
+var offset = 3;
+for (var y=0;y<80;++y) {
+	for (var x=0;x<256;++x) {
+		//triangles.push(x,y,0,x+1,y,0,x,y+1,0);
+		if (data[offset]>0) {
+			triangles.push(x-80, y-40, 20*Math.random(), 1);
+		}
+		offset+=4;
+	}
+}
+
+function project(x, r, dt, r0) {
+	// t in [0, 60] : -1.4 Slightly off axis (not -1.57) so triangles are not completely hidden
+	// t in [60, 515] : -1.4 to 0 Rotate almost 1/4 turn to realign perpendicular to the text plane
+	// t above 515 : constant 0
+	let aY = 1.4*(time<60?-1:(time<515?Math.min(0, Math.sin((time-60)/300)-1):0));
+	let theta = Math.max(0,dt*(500-time)/1000);
+	let y = r*Math.cos(theta);
+	let z = r*Math.sin(theta);
+	let fallY = Math.max(0,time/10-90-r0-dt)/4;
+	let dx = x*Math.cos(aY)-z*Math.sin(aY);
+	let dy = y+fallY*fallY;
+	let dz = x*Math.sin(aY)+z*Math.cos(aY);
+	return [a.width/2+8*dx, a.height/2+8*dy];
+}
+
+function draw() {
+	ac.fillStyle="rgba(0,0,0,"+Math.max(1-time/500, .2)+")"; // black background, slightly transparent so triangles leave trails
+	ac.fillRect(0,0,a.width,3*mirrorHeight);
+	ac.clearRect(0,3*mirrorHeight,a.width,mirrorHeight); // hack : keep the bottom quarter translucent to see the second canvas
+	let dR = Math.max(0, 500-time)/10; // radial offset from the center line, from 5 (tube) to 0 
+	let n=0;
+	for (let i=0; i<triangles.length; ) {
+		let x = triangles[i++];
+		let r = triangles[i++]+dR;
+		let dt = triangles[i++];
+		if (triangles[i++]) {
+		
+			let fallY = Math.max(0,time/10-90-r-dt)/4;
+			ac.fillStyle="hsl("+(180+fallY*6)+",100%,"+(100-fallY*6)+"%)";
+
+			ac.beginPath();
+			ac.moveTo(...project(x-1,r+n,dt, r));
+			ac.lineTo(...project(x+1,r+n,dt, r));
+			ac.lineTo(...project(x,r+1-n,dt, r));
+			ac.fill();
+			// hide triangles that fall into water
+			if (fallY>0&&r+fallY*fallY>a.height/27) { // exact value 3/80 
+				triangles[i-1]=0;
+			}
+		}
+
+		n=1-n;
+	}
+	
+	// reflection using canvas bitmap copy
+	/*
+	c.globalCompositeOperation="lighter";
+	c.scale(1,-1);
+	var dx = Math.random()*0;
+	var dy = Math.random()*0;
+	c.drawImage(aa, 0, 0, a.width, .75*a.height, dx, -dy-a.height, a.width, .25*a.height);	
+	c.scale(1,-1);
+	c.globalCompositeOperation="source-over";
+	c.fillStyle="rgba(0,0,64, .2)";
+	c.fillRect(0, .75*a.height, a.width, .25*a.height);
+	*/
+	
+	// reflection using image data and waves
+	let sourceBitmap = ac.getImageData(0,0,a.width,a.height).data;
+	for (let y = time&1; y<mirrorHeight; y+=2) { // interlace for faster rendering
+		for (let x=0; x<a.width; ++x) {
+			let targetY = a.height-y*4;
+			let targetX = x;
+			
+			targetX += 5*Math.sin(time/20+y/9);
+			targetY += 15*Math.sin(time/10-x/20+y/7);
+
+			targetX += 4*Math.sin(time/5+y/3);
+			targetY += 7*Math.sin(time/6-x/5);
+			
+			targetX = Math.min(Math.max(0, Math.floor(targetX)), a.width-1);
+			targetY = Math.min(Math.max(0, Math.floor(targetY)), a.height-1);
+			
+			targetBitmap[y*a.width*4+x*4] = sourceBitmap[targetY*a.width*4+targetX*4];
+			targetBitmap[y*a.width*4+x*4+1] = sourceBitmap[targetY*a.width*4+targetX*4+1];
+			targetBitmap[y*a.width*4+x*4+2] = Math.max(80,sourceBitmap[targetY*a.width*4+targetX*4+2]);
+			targetBitmap[y*a.width*4+x*4+3] = 255; // fully opaque
+		}  
+	}
+	c.putImageData(targetImageData, 0, 3*mirrorHeight);
+	++time;
+}
+
+
+setInterval(function() {
+	draw();
+	
+	++frame;
+	var frameRate= 1000*frame / (new Date() - t0);
+	debug.innerHTML="time="+time+", frameRate="+frameRate;
+
+}, 10);
+
+      // END
+		</script>
+
+</body></html>

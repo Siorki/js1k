@@ -1,0 +1,264 @@
+<!doctype html>
+<head>
+	<title>Title ~ js1024</title>
+	<meta name="author" content="Author"></meta>
+	<meta name="description" content="Short description"></meta>
+	<meta name="title" content="Title"></meta>
+	<meta charset=utf-8>
+</head>
+<body id=b bgColor="#f00">
+<canvas id=a></canvas>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+#a { position: relative; display: block; }
+.play { position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); font-size: 30px; font-family: arial, sans-serif; background: #f3f4f5; padding: 15px; border: 2px solid #ddd; border-radius: 5px; }
+</style>
+
+<script>
+
+// Entry configuration
+// ===================
+
+var title = "Title"; // this will be assigned automatically
+
+// Shim setup and polyfills (do not edit)
+// ======================================
+
+// canvas automatically adjusted !
+a.width = innerWidth;
+a.height = innerHeight;
+
+c = a.getContext("2d"); // no more $type conditional
+
+d = document;
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+a.requestPointerLock = a.requestPointerLock || a.mozRequestPointerLock || a.webkitRequestPointerLock;
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+if (typeof OscillatorNode !== 'undefined' && OscillatorNode.prototype) {
+  OscillatorNode.prototype.start = OscillatorNode.prototype.start || OscillatorNode.prototype.noteOn;
+  OscillatorNode.prototype.stop = OscillatorNode.prototype.stop || OscillatorNode.prototype.noteOff;
+}
+
+// Add a start button if sound is present in the code
+/*
+onload = () => {
+
+  var entry_code = entry.innerText;
+  var has_sound = false;
+  if(entry_code.includes('eval')){
+    try {
+      eval(entry_code.replace(/eval\(/g, 'throw(').replace(/eval\`/g, 'throw`'));
+    }
+    catch(e){
+      entry_code = e;
+    }
+  }
+  if(entry_code.includes("AudioContext")||entry_code.includes("Oscillator")||entry_code.includes("speak")||entry_code.includes("play")||entry_code.includes("autoplay")){
+    b.insertAdjacentHTML("beforeEnd", "<button class='play' onclick='console.log(entry.innerText);eval(entry.innerText);this.remove()'>PLAY</button>");
+  }
+  else {
+    eval(entry.innerText);
+  }
+};
+*/
+console.log(
+  a, // canvas
+  b, // body
+  c, // 2D canvas context
+  d  // document
+);
+
+</script>
+
+<script>
+// Your entry goes here 👇
+// =======================
+
+
+
+// submission starts here
+t=0; 
+
+b = []; m = []; f = [0];
+for (i=0;160>i;++i) {
+  h = []; n = [3];
+  x = 0|(30*Math.random()**3);
+  for (g=0;x+4>g;++g)
+    h.push([Math.random()>.5,Math.random()>.5,Math.random()>.5,Math.random()>.5,Math.random()>.5,0]); // final 0 unneeded but improves packing
+  b.push(h);
+  for (g=0;9>g;++g)
+    n.push(Math.random()*3+n[g]);
+
+  m.push(n);
+  
+  f.push(Math.random()*10+f[i]); // cars
+  
+}
+
+
+// =======================
+
+
+p = (x,y,z) => {
+    x-=140+t/10;
+    u = z*.3+.954*x;
+    v = 30-x*.3+.954*z;
+    return [innerWidth/2+innerWidth/v*u,innerHeight/2+innerWidth/v*(20-y)];
+};
+
+setInterval( (x,y,z) => {
+      c.fillStyle="#005";
+      c.fillRect(0,0,innerWidth,innerHeight);
+      
+      // draw starfield
+      c.fillStyle="#fff";
+      for (i=0; 7500>i;++i)
+          c.fillRect(i*i%7525-1500,i%2525-1500, 1, i%15/7);
+
+      // draw hills and mountains
+      for (j=9;--j+1;) { 
+        c.fillStyle="rgb(0,0,"+j*9+")";
+        c.beginPath();
+        c.lineTo(...p(t/80, 0, 80));
+        for (i=0;50>i;++i) {
+          x=0|(i+t/200-30);
+          c.lineTo(...p(x*20, m[x&31][j], 150+j*20));
+        }
+        c.lineTo(...p(x*20, 0, 80));
+        c.closePath();
+        c.fill();
+      }
+      
+      // draw cars - not present in compo version
+      // (uncomment to enable)
+      /**
+      c.fillStyle="#fea";
+      for (i=0;50>i;++i) 
+        c.fillRect(...p(t/10+(f[i]+2020+t/10)%200, 0, 84), 3, 2);
+      c.fillStyle="#f00";
+      for (i=0;50>i;++i)
+        c.fillRect(...p(t/10+(f[i]+2020-t/10)%200, 0, 86), 3, 2);
+      */
+      
+      
+      // draw buildings
+      for (j=0;5>j;++j)for (i=0;23>i;++i) {
+      
+          // Circular buffer for buildings.
+          // On the broad side, only 23 of them are visible at the same time
+          // (computed from view angle and browser width - the viewport is constant horizontally)
+          x=0|(i+t/80); z=120-8*j;
+          n=b[(x&31)+j*32];
+
+          // left wall
+          c.fillStyle="#000";
+          c.beginPath();
+          c.lineTo(...p(x*8,0,z));
+          c.lineTo(...p(x*8,0,z+5));
+          c.lineTo(...p(x*8,n.length,z+5));
+          c.lineTo(...p(x*8,n.length,z));
+          c.closePath();
+          c.fill();
+          
+          c.fillStyle="#fea";
+          for (h=0;n.length>h;++h) for (g=0;5>g;++g) if (n[h][g]){
+            c.beginPath();
+            c.lineTo(...p(x*8,.1+h,z+.2+g));
+            c.lineTo(...p(x*8,.1+h,z+.8+g));
+            c.lineTo(...p(x*8,.9+h,z+.8+g));
+            c.lineTo(...p(x*8,.9+h,z+.2+g));
+            c.closePath();
+            c.fill();
+          }
+
+          // right wall
+          c.fillStyle="#000";
+          c.beginPath();
+          c.lineTo(...p(x*8+5,0,z));
+          c.lineTo(...p(x*8+5,0,z+5));
+          c.lineTo(...p(x*8+5,n.length,z+5));
+          c.lineTo(...p(x*8+5,n.length,z));
+          c.closePath();
+          c.fill();
+        
+          c.fillStyle="#fea";
+          for (h=0;n.length>h;++h) for (g=0;5>g;++g) if (n[h][g]){
+            c.beginPath();
+            c.lineTo(...p(x*8+5,.1+h,z+.2+g));
+            c.lineTo(...p(x*8+5,.1+h,z+.8+g));
+            c.lineTo(...p(x*8+5,.9+h,z+.8+g));
+            c.lineTo(...p(x*8+5,.9+h,z+.2+g));
+            c.closePath();
+            c.fill();
+          }
+
+          // roof
+          c.fillStyle="#000";
+          if (20>n.length) {
+            c.beginPath();
+            c.lineTo(...p(x*8,n.length,z));
+            c.lineTo(...p(x*8,n.length,z+5));
+            c.lineTo(...p(x*8+5,n.length,z+5));
+            c.lineTo(...p(x*8+5,n.length,z));
+            c.closePath();
+            c.fill();
+          }
+        
+          // front wall
+          c.beginPath();
+          c.lineTo(...p(x*8,0,z));
+          c.lineTo(...p(x*8,n.length,z));
+          c.lineTo(...p(x*8+5,n.length,z));
+          c.lineTo(...p(x*8+5,0,z));
+          c.closePath();
+          c.fill();
+    
+          c.fillStyle="#fea";
+          for (h=0;n.length>h;++h) for (g=0;5>g;++g) if (n[h][g]){
+            c.beginPath();
+            c.lineTo(...p(x*8+.2+g,.1+h,z));
+            c.lineTo(...p(x*8+.2+g,.9+h,z));
+            c.lineTo(...p(x*8+.8+g,.9+h,z));
+            c.lineTo(...p(x*8+.8+g,.1+h,z));
+            c.closePath();
+            c.fill();
+          }
+          
+          
+      }
+      
+      // reflections on water
+      
+      // left border : u = 0 => dx/dz=-1/2
+      // x*Math.sin(angle)+z*Math.cos(angle)+30 = -2 (x*Math.cos(angle)-z*Math.sin(angle))
+      // -0.3x+0.954z+30 = -2 (0.954x +0.3z) = -1.908x - 0.6z
+      // -1.608x = 1.554z + 30
+      // since riverside is for z=80 : x=-96 and we compute the matching y (depends on screen aspect ratio)
+      h=p(t/10+44, 0, 80)[1];
+      
+      c.scale(1, -1);
+      for (i=0;innerWidth>i*20;++i) 
+        c.drawImage(a, i*20, h+i-(innerHeight-h-i), 20, innerHeight-h-i, i*20, -innerHeight, 20, innerHeight-h-i);
+      c.scale(1, -1);
+      
+      c.fillStyle="#0488"; // semi-transparent cyan-blue
+      c.beginPath();
+      c.lineTo(0,h);
+      c.lineTo(innerWidth, h+innerWidth/20);
+      c.lineTo(innerWidth, innerHeight);
+      c.lineTo(0, innerHeight);
+      c.closePath();
+      c.fill();
+    
+
+		
+		++t;
+		
+	}, 40)
+
+
+// =======================
+</script>
+</body>
+

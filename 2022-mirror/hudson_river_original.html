@@ -1,0 +1,272 @@
+<!doctype html>
+<head>
+	<title>Title ~ js1024</title>
+	<meta name="author" content="Author"></meta>
+	<meta name="description" content="Short description"></meta>
+	<meta name="title" content="Title"></meta>
+	<meta charset=utf-8>
+</head>
+<body id=b bgColor="#f00">
+<canvas id=a></canvas>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+#a { position: relative; display: block; }
+.play { position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); font-size: 30px; font-family: arial, sans-serif; background: #f3f4f5; padding: 15px; border: 2px solid #ddd; border-radius: 5px; }
+</style>
+
+<script>
+
+// Entry configuration
+// ===================
+
+var title = "Title"; // this will be assigned automatically
+
+// Shim setup and polyfills (do not edit)
+// ======================================
+
+// canvas automatically adjusted !
+a.width = innerWidth;
+a.height = innerHeight;
+
+c = a.getContext("2d"); // no more $type conditional
+
+d = document;
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+a.requestPointerLock = a.requestPointerLock || a.mozRequestPointerLock || a.webkitRequestPointerLock;
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+if (typeof OscillatorNode !== 'undefined' && OscillatorNode.prototype) {
+  OscillatorNode.prototype.start = OscillatorNode.prototype.start || OscillatorNode.prototype.noteOn;
+  OscillatorNode.prototype.stop = OscillatorNode.prototype.stop || OscillatorNode.prototype.noteOff;
+}
+
+// Add a start button if sound is present in the code
+/*
+onload = () => {
+
+  var entry_code = entry.innerText;
+  var has_sound = false;
+  if(entry_code.includes('eval')){
+    try {
+      eval(entry_code.replace(/eval\(/g, 'throw(').replace(/eval\`/g, 'throw`'));
+    }
+    catch(e){
+      entry_code = e;
+    }
+  }
+  if(entry_code.includes("AudioContext")||entry_code.includes("Oscillator")||entry_code.includes("speak")||entry_code.includes("play")||entry_code.includes("autoplay")){
+    b.insertAdjacentHTML("beforeEnd", "<button class='play' onclick='console.log(entry.innerText);eval(entry.innerText);this.remove()'>PLAY</button>");
+  }
+  else {
+    eval(entry.innerText);
+  }
+};
+*/
+console.log(
+  a, // canvas
+  b, // body
+  c, // 2D canvas context
+  d  // document
+);
+
+</script>
+
+<script>
+// Your entry goes here 👇
+// =======================
+
+b.appendChild(debug = document.createElement("div"));
+debug.style.position="absolute";
+debug.style.top="5px";
+debug.style.color="#FFF";
+frame=0; t0 = new Date();	// FPS measure only
+
+// submission starts here
+
+
+var buildings = [], mountains = [];
+for (i=0;i<160;++i) {
+  let oneBuilding = [], oneMountain = [3];
+  let height = 4+Math.floor(30*Math.random()**3);
+  for (g=0;g<height;++g) {
+    oneBuilding.push([Math.random()>.5?1:0,Math.random()>.5?1:0,Math.random()>.5?1:0,Math.random()>.5?1:0,Math.random()>.5?1:0]); 
+  }
+  buildings.push(oneBuilding);
+  for (g=0;g<9;++g) {
+    oneMountain.push(Math.random()*3+oneMountain[g]);
+  }
+  mountains.push(oneMountain);
+}
+
+
+
+function drawView() {
+    
+    c.fillStyle="#005";
+    c.fillRect(0,0,innerWidth,innerHeight);
+    
+    // draw starfield
+    c.fillStyle="#fff";
+    for (i=0; ++i-7500;)
+        c.fillRect(i*i%7525-1500,i%2525-1500, 1, i%15/7);
+
+        /*
+    c.fillStyle="#fa0";
+    c.beginPath();
+    c.moveTo(...project(frame/80, 0, 80));
+    c.lineTo(...project(frame/80, 0, 150));
+    c.closePath();
+    c.fill();   */
+        
+    for (j=8;j>-1;--j) { 
+      c.fillStyle="rgb(0,0,"+9*j+")";
+      c.beginPath();
+      c.moveTo(...project(frame/80, 0, 80));
+      for (i=0;i<50;++i) {
+        x=Math.floor(i-30+frame/200);
+        n=mountains[x&31];
+        c.lineTo(...project(x*20, n[j], 150+j*20));
+      }
+      c.lineTo(...project(x*20, 0, 80));
+      c.closePath();
+      c.fill();
+    }
+        
+    for (j=0;j<5;++j)for (i=0;i<23;++i) {
+    
+        // Circular buffer for buildings.
+        // On the broad side, only 23 of them are visible at the same time
+        // (computed from view angle and browser width - the viewport is constant horizontally)
+        x=Math.floor(i+frame/80); z=8*(15-j);
+        n=buildings[(x&31)+j*32];
+
+        // left wall
+        c.fillStyle="#000";
+        c.beginPath();
+        c.moveTo(...project(x*8,0,z));
+        c.lineTo(...project(x*8,0,z+5));
+        c.lineTo(...project(x*8,n.length,z+5));
+        c.lineTo(...project(x*8,n.length,z));
+        c.closePath();
+        c.fill();
+        
+        c.fillStyle="#fea";
+        for (h=0;h<n.length;++h) for (g=0;g<5;++g) if (n[h][g]){
+          c.beginPath();
+          c.moveTo(...project(x*8,.1+h,z+.2+g));
+          c.lineTo(...project(x*8,.1+h,z+.8+g));
+          c.lineTo(...project(x*8,.9+h,z+.8+g));
+          c.lineTo(...project(x*8,.9+h,z+.2+g));
+          c.closePath();
+          c.fill();
+        }
+
+        // right wall
+        c.fillStyle="#000";
+        c.beginPath();
+        c.moveTo(...project(x*8+5,0,z));
+        c.lineTo(...project(x*8+5,0,z+5));
+        c.lineTo(...project(x*8+5,n.length,z+5));
+        c.lineTo(...project(x*8+5,n.length,z));
+        c.closePath();
+        c.fill();
+      
+        c.fillStyle="#fea";
+        for (h=0;h<n.length;++h) for (g=0;g<5;++g) if (n[h][g]){
+          c.beginPath();
+          c.moveTo(...project(x*8+5,.1+h,z+.2+g));
+          c.lineTo(...project(x*8+5,.1+h,z+.8+g));
+          c.lineTo(...project(x*8+5,.9+h,z+.8+g));
+          c.lineTo(...project(x*8+5,.9+h,z+.2+g));
+          c.closePath();
+          c.fill();
+        }
+
+        // roof
+        c.fillStyle="#000";
+        if (n.length<20) {
+          c.beginPath();
+          c.moveTo(...project(x*8,n.length,z));
+          c.lineTo(...project(x*8,n.length,z+5));
+          c.lineTo(...project(x*8+5,n.length,z+5));
+          c.lineTo(...project(x*8+5,n.length,z));
+          c.closePath();
+          c.fill();
+        }
+      
+        // front wall
+        c.beginPath();
+        c.moveTo(...project(x*8,0,z));
+        c.lineTo(...project(x*8,n.length,z));
+        c.lineTo(...project(x*8+5,n.length,z));
+        c.lineTo(...project(x*8+5,0,z));
+        c.closePath();
+        c.fill();
+  
+        c.fillStyle="#fea";
+        for (h=0;h<n.length;++h) for (g=0;g<5;++g) if (n[h][g]){
+          c.beginPath();
+          c.moveTo(...project(x*8+.2+g,.1+h,z));
+          c.lineTo(...project(x*8+.2+g,.9+h,z));
+          c.lineTo(...project(x*8+.8+g,.9+h,z));
+          c.lineTo(...project(x*8+.8+g,.1+h,z));
+          c.closePath();
+          c.fill();
+        }
+        
+        
+    }
+    
+    // reflections on water
+    
+    // left border : u = 0 => dx/dz=-1/2
+    // x*Math.sin(angle)+z*Math.cos(angle)+30 = -2 (x*Math.cos(angle)-z*Math.sin(angle))
+    // -0.3x+0.954z+30 = -2 (0.954x +0.3z) = -1.908x - 0.6z
+    // -1.608x = 1.554z + 30
+    // since riverside is for z=80 : x=-96 and we compute the matching y (depends on screen aspect ratio)
+    h=project(-96+140+frame/10, 0, 80)[1];
+    
+    c.scale(1, -1);
+    for (i=0;i*20<innerWidth;++i) {
+      var v = innerHeight-h-i;;
+      c.drawImage(a, i*20, h+i-v, 20, v, i*20, -(v+h+i), 20, v);
+      }
+    c.scale(1, -1);
+    
+    c.fillStyle="#00408080"; // semi-transparent cyan-blue
+    c.beginPath();
+    c.moveTo(0,h);
+    c.lineTo(innerWidth, h+innerWidth/20);
+    c.lineTo(innerWidth, innerHeight);
+    c.lineTo(0, innerHeight);
+    c.closePath();
+    c.fill();
+    
+}
+
+// =======================
+
+
+function project(x,y,z) {
+    x-=140+frame/10;
+    y-=20;
+    var angle = -.3047; // cos(angle)=0.954 , sin(angle)=-0.3
+    var dx = x*Math.cos(angle)-z*Math.sin(angle);
+    var dz = x*Math.sin(angle)+z*Math.cos(angle)+30;
+    var u = innerWidth/2+innerWidth*dx/dz;
+    var v = innerHeight/2-innerWidth*y/dz;
+    return [u,v];
+}
+
+setInterval( function () {
+		drawView();
+		
+		++frame;
+		var frameRate= 1000*frame / (new Date() - t0);
+		debug.innerHTML="frameRate="+Math.floor(frameRate*100)/100+"\nDisplaying : "+((frame/80)&31)+" to "+((22+frame/80)&31);
+	}, 40);
+
+
+// =======================
+</script>
+</body>

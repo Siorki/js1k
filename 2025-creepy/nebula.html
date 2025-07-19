@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="x/html; charset=UTF-8">
+		<title>JS1k, 1k demo submission [ID]</title>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<div id="debug"></div>
+		<canvas id="c"></canvas>
+		<script>
+				var a = document.getElementsByTagName('canvas')[0];
+var b = document.body;
+var d = function(e){ return function(){ e.parentNode.removeChild(e); }; }(a);
+// unprefix some popular vendor prefixed things (but stick to their original name)
+var AudioContext =
+window.AudioContext ||
+window.webkitAudioContext;
+var requestAnimationFrame =
+window.requestAnimationFrame ||
+window.mozRequestAnimationFrame ||
+window.webkitRequestAnimationFrame ||
+window.msRequestAnimationFrame ||
+function(f){ setTimeout(f, 1000/30); };
+ 
+// fix bug in safari: http://qfox.nl/weblog/218
+document.body.clientWidth;
+// auto resize (original) canvas. call `onresize(w,h) to limit the size of the canvas
+(window.onorientationchange = window.onresize = function(a){
+var mw = Infinity;
+var mh = Infinity;
+var min = Math.min;
+ 
+return function(w,h){
+if (arguments.length === 2) {
+mw = w;
+mh = h;
+}
+a.style.width = (a.width = min(mw, innerWidth)) + 'px';
+a.style.height = (a.height = min(mh, innerHeight)) + 'px';
+};
+}(a))();
+ 
+var c = a.getContext('2d');
+
+
+	// submission begin
+  	b.appendChild(debug = document.createElement("div"));
+	debug.style.position="absolute";
+	debug.style.top="5px";
+	debug.style.color="#F00";
+	frame=0; t0 = new Date();	// FPS measure only
+
+	
+// inspired by https://en.wikipedia.org/wiki/Main_sequence#/media/File:LH_95.jpg
+
+
+// canvas a2 : holds the reference galaxy images. Stars on top half, nebula on bottom half
+let a2 = document.createElement("canvas");
+a2.width = a2.height = 4000;
+c2 = a2.getContext('2d');
+
+
+c2.fillStyle="#000";
+c2.fillRect(0,0,4000,4000);
+for (let i=0; i<2000; ++i) { // draw stars
+
+  let x = 2400*Math.random();
+  let y = 1900*Math.random();
+  let size = Math.random();
+  size =size*size*8;
+  let color = Math.random();
+  color = color*color; // more orange stars than blue ones
+  // 0          .25        .5         .75    1
+  // orange              white             blue
+  let hue = color>.5 ? 200 : 30;
+  let saturation = 100;
+  let luminance = 100-60*Math.abs(color-.5);
+  let rGradient = c2.createRadialGradient(x, y, size/4, x, y, size);
+  rGradient.addColorStop(0, "hsl("+hue+","+saturation+"%,"+Math.floor(luminance)+"%)");
+  rGradient.addColorStop(1, "#00000000");
+  c2.fillStyle = rGradient;
+  c2.fillRect(x-size,y-size,size*2,size*2);
+}
+for (let i=0; i<2000; ++i) { // draw nebula
+
+  let color = Math.random();
+  let x = 2400*color;
+  let y = 2000+1900*Math.random();
+  let size = 48;//Math.random();
+  color = (1-Math.cos(color*8*Math.PI))/2;
+  // have the nebula color fluctuate several times from left to right
+  //      0          .25        .5         .75        1
+  // orange #140E08            gray               blue #080C10
+  let hue = color>.5 ? 200 : 30;
+  let saturation = 100*Math.abs(color-.5);
+  let luminance = 5;
+
+  let rGradient = c2.createRadialGradient(x, y, size/4, x, y, size);
+  rGradient.addColorStop(0, "hsl("+hue+","+Math.floor(saturation)+"%,"+luminance+"%)");
+  rGradient.addColorStop(1, "#00000000");
+  c2.fillStyle = rGradient;
+  c2.fillRect(x-size,y-size,size*2,size*2);
+}
+
+
+// canvas a4 : contains a single cloud for the black hole. Used to speed up rendering (image copy faster than create multiple gradients)
+let a4 = document.createElement("canvas");
+a4.width = a4.height = 512;
+c4 = a4.getContext('2d');
+
+
+
+
+var stars = []; // time, distance to center, angle, radius, color
+for (var time=-3000; ++time;) {
+	stars.push([time, 240, 6.28*Math.random(), 20+20*Math.random()]);
+}
+var rGradient = c4.createRadialGradient(32, 32, 16, 32, 32, 32);
+rGradient.addColorStop(0, "#140e08");
+rGradient.addColorStop(1, "#000000");
+c4.fillStyle = rGradient;
+c4.fillRect(0,0,64,64);
+
+
+function drawBlackHole()
+{
+
+	c.globalCompositeOperation="lighter";
+	for (var i=0; i<stars.length; ++i) {
+		let radius = Math.max(21, stars[i][1]-4*Math.sqrt(time-stars[i][0]));
+		//var angle = stars[i][2]-time/200;
+		let angle = stars[i][2]-=1/radius;
+		let x=radius*Math.cos(angle);
+		let y=radius*Math.sin(angle);
+		let size = Math.min(15+(radius/10), (time-stars[i][0])/8);
+		c.drawImage(a4, 0, 0, 64, 64, Math.max(0, 2500-time)+innerWidth/2+(x-size/2)*innerWidth/512, innerHeight/2+(y-size)*(innerWidth/2/512)-300*Math.sin(Math.min(2500,time)/800), size*innerWidth/512, size*innerWidth/512);
+	}
+	
+	//c.drawImage(a3, 0, 0, 512, 512, Math.max(0, 3900-time), innerHeight/2-innerWidth/4, innerWidth, innerWidth/2);
+		
+	c.fillStyle="#000";
+	c.globalCompositeOperation="source-over";
+	c.beginPath();
+	c.arc(Math.max(0, 2500-time)+innerWidth/2, innerHeight/2-300*Math.sin(Math.min(2500,time)/800), innerWidth/40, 3.2, 0);
+	c.fill();
+	c.globalCompositeOperation="lighter";
+	
+}
+
+function drawGalaxy() 
+{
+  
+  for (let i=1; i<5; ++i) {
+    c.drawImage(a2, time, 300*(i&3)+300*Math.sin(time/800), innerWidth/i, innerHeight/i, 0, 0, innerWidth, innerHeight);
+  }
+  for (let i=2; i<20; ++i) {
+    c.drawImage(a2, time, 2000+300*(i&3)+300*Math.sin(time/800), innerWidth/i, innerHeight/i, 0, 0, innerWidth, innerHeight);
+  }
+}
+
+function drawSpaceship(x,y)
+{
+	
+	let rGradient = c.createRadialGradient(x, y-300*Math.sin(Math.min(2500,time)/800), 0, x, y-300*Math.sin(Math.min(2500,time)/800), 200);
+	rGradient.addColorStop(0, "#ff8");
+	rGradient.addColorStop(.1, "#a62");
+	rGradient.addColorStop(1, "#000000");
+	c.fillStyle = rGradient;
+	c.fillRect(0,y-300*Math.sin(Math.min(2500,time)/800),x,2);
+}
+
+setInterval( function () {
+	c.globalCompositeOperation="source-over";
+	c.fillStyle="#000";
+	c.fillRect(0,0,innerWidth, innerHeight);
+	drawBlackHole();
+	drawGalaxy();
+	drawSpaceship(200, 600);
+	drawSpaceship(200-20*Math.sin(time/80), 580);
+	stars.push([time, 240, 6.28*Math.random(), 20+20*Math.random()]);
+	stars.shift();
+	++time;
+	
+	
+	
+	
+	
+	frame++;
+	var frameRate= 1000*frame / (new Date() - t0);
+	debug.innerHTML=" frameRate="+frameRate;
+}, 40);
+
+      // END
+		</script>
+
+</body></html>

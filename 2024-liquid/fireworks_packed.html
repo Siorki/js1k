@@ -1,0 +1,127 @@
+<!doctype html>
+
+<head>
+<title>Fireworks over water - packed compo version</title>
+<meta name="author" content="author">
+<meta name="description" content="description">
+<meta name="title" content="title">
+<meta charset=utf-8>
+</head>
+
+<body id=b>
+<canvas id=a></canvas>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    #a {
+        position: relative;
+        display: block;
+    }
+    
+    .play {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%)translateY(-50%);
+        font-size: 30px;
+        font-family: arial, sans-serif;
+        background: #f3f4f5;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    /* for mobile */
+    :root {
+        touch-action: pan-x pan-y;
+        height: 100%;
+    }
+</style>
+
+<script>
+    // Entry configuration
+    // ===================
+
+    var title = "title";
+
+    // Shim setup and polyfills (do not edit)
+    // ======================================
+
+    a = document.getElementById("a");
+    a.width = innerWidth;
+    a.height = innerHeight;
+
+    b = document.getElementById("b");
+
+    c = a.getContext("2d");
+    d = document;
+
+    var M = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); // detects if the user is on mobile
+
+    if (M) {
+        a.oncontextmenu = function(e) {
+                e.preventDefault();
+            } // prevents context menu on mobile
+    }
+
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+    a.requestPointerLock = a.requestPointerLock || a.mozRequestPointerLock || a.webkitRequestPointerLock;
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    if (typeof OscillatorNode !== 'undefined' && OscillatorNode.prototype) {
+        OscillatorNode.prototype.start = OscillatorNode.prototype.start || OscillatorNode.prototype.noteOn;
+        OscillatorNode.prototype.stop = OscillatorNode.prototype.stop || OscillatorNode.prototype.noteOff;
+    }
+
+    // Add a start button if sound is present in the code
+    onload = () => {
+        var entry_code = entry.innerText;
+        var has_sound = false;
+        if(entry_code.includes('eval')) {
+            try {
+                parent.eval(entry_code.replace(/eval\(/g, 'throw(').replace(/eval\`/g, 'throw`'));
+            }
+            catch(e){
+                entry_code = e;
+            }
+        }
+        
+        try {
+        if(entry_code.includes("AudioContext")||entry_code.includes("Oscillator")||entry_code.includes("speak")||entry_code.includes("play")||entry_code.includes("autoplay")){
+            b.insertAdjacentHTML("beforeEnd", "<button class='play' onclick='start_demo(this)'>PLAY</button>");
+        } else {
+            parent.eval(entry.innerText);
+        }
+        } catch(e) {
+            // I have no idea what this does but I think it will make demos that contain eval naturally (no compressor used) work
+            entry_code = entry.innerText;
+            parent.eval(entry_code);
+        }
+    };
+
+    // Makes the "window." be optional in the demo code
+    function start_demo(button) {
+        console.log(entry.innerText);
+        parent.eval(entry.innerText);
+        button.remove();
+    }
+
+    console.log(
+        a, // canvas
+        b, // body
+        c, // 2D canvas context
+        d // document
+    );
+</script>
+
+<script type=text id=entry>
+// Your entry goes here 👇
+// =======================
+for(_=`ext('~Math.||sin(z|min(Z+y/Y)))X3*CW=0;Lif(K]=J-1H++Ga.F){E00B|max(A0,@A@5B-t)/10u*B)*Rect(@f*6)+'*4+);FwidthW,,Cor(|flo,u,s)/2+8*(|coseTo(...j(x;aFstyle.filltImageData(w[uG].data;t/10-90-s-u)/4p[iG]	Style=*zt/;ac.1,s+n)linc.ge@;m[y*x*4Fheight(1.4*(t<60?H:(t<515?Z@z(t-60)/3B)H):0XK!tEb.appendChild(aa=FcloneNode()ac=aFgetCont~2d')position='fixed'top='8px''#fff'font='40pt bold Verdana'T~js1024',-2,40v=a@256,80)p=[];fnLn<128B;Gn)v[n3]&&p.push(n%256-8@n>>8,20*|random(),1C=/4e=m=ej=(x,r=>[*x-r*z|sin),(r+()**2)]}ac."rgba(@@@"+A1-t/50@.2)+")"@,W)clearfn=iLi<p.length;n=1-nEx=	;s=	-40+;u=	;K	Ef='hsl('+(180+,1B%,'+(1B-%)'beginPath()mov-+,s+1-n)(Kf>0&&s+f*f>/27)p[iHJ0}}w=a@,)fy=t&1;y<C;y+=2EfxLx<;GxEu=Z-y1510-x/20Y7)+76-x/5X,H)*Zx+520Y9)+45Y3X,H)*4J+1J+2JA8@)+3J255}}c.pue,@WGt`;G=/[^ -?CDIM-V[-y{}]/.exec(_);)with(_.split(G))_=join(shift(t=0));setInterval(_,10)
+// =======================
+</script>
+</body>

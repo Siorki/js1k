@@ -1,0 +1,83 @@
+<!doctype html>
+<head>
+	<title>Title ~ js1024</title>
+	<meta name="author" content="Author"></meta>
+	<meta name="description" content="Short description"></meta>
+	<meta name="title" content="Title"></meta>
+	<meta charset=utf-8>
+</head>
+<body id=b bgColor="#f00">
+<canvas id=a></canvas>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+#a { position: relative; display: block; }
+.play { position: fixed; top: 50%; left: 50%; transform: translateX(-50%)translateY(-50%); font-size: 30px; font-family: arial, sans-serif; background: #f3f4f5; padding: 15px; border: 2px solid #ddd; border-radius: 5px; }
+</style>
+
+<script>
+
+// Entry configuration
+// ===================
+
+var title = "Title"; // this will be assigned automatically
+
+// Shim setup and polyfills (do not edit)
+// ======================================
+
+// canvas automatically adjusted !
+a.width = innerWidth;
+a.height = innerHeight;
+
+c = a.getContext("2d"); // no more $type conditional
+
+d = document;
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+a.requestPointerLock = a.requestPointerLock || a.mozRequestPointerLock || a.webkitRequestPointerLock;
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+if (typeof OscillatorNode !== 'undefined' && OscillatorNode.prototype) {
+  OscillatorNode.prototype.start = OscillatorNode.prototype.start || OscillatorNode.prototype.noteOn;
+  OscillatorNode.prototype.stop = OscillatorNode.prototype.stop || OscillatorNode.prototype.noteOff;
+}
+
+// Add a start button if sound is present in the code
+/*
+onload = () => {
+
+  var entry_code = entry.innerText;
+  var has_sound = false;
+  if(entry_code.includes('eval')){
+    try {
+      eval(entry_code.replace(/eval\(/g, 'throw(').replace(/eval\`/g, 'throw`'));
+    }
+    catch(e){
+      entry_code = e;
+    }
+  }
+  if(entry_code.includes("AudioContext")||entry_code.includes("Oscillator")||entry_code.includes("speak")||entry_code.includes("play")||entry_code.includes("autoplay")){
+    b.insertAdjacentHTML("beforeEnd", "<button class='play' onclick='console.log(entry.innerText);eval(entry.innerText);this.remove()'>PLAY</button>");
+  }
+  else {
+    eval(entry.innerText);
+  }
+};
+*/
+console.log(
+  a, // canvas
+  b, // body
+  c, // 2D canvas context
+  d  // document
+);
+
+</script>
+
+<script>
+// Your entry goes here 👇
+// =======================
+
+
+for(_='...p($inner:athQc.qqfill|);~~qclosePQ(~|()O)O}N+.V+gU+h,zkkVjj2UL;++KKg)JKi)Z[],Yn.lengthXX,z`0,__z^20GG,F|Rect(E+5D|Style="CC#0Bj8UA+t/@qlineTo(??$x*!)~!8  ,";:Width/2+/dz*525-150_(x,y,z)=>{*.3V954*:Height-h-i=0;for(gg<__80),.1`DZ{x=U,.9k V8qscale(1,-1~qbeginPQ(~qmoveTo($x*8	MQ.random()>.5.9LNB00.push(MQ.floor( D,ii,z)O;C#feahh<XKh)5Jif(n[h][g]){	tb=Ym=Yf=[0];<160Yn=[3];h=4+30***3~hJx[,,,,]~bx~9Jn*3+n[g]~mn)}p=x-=140@10;dx=zx;dz=30-xz;return[dx,(G-y)]};setInterval(B05E__,~C#fff<7500ZEi*i%7i%21,i%15/7~H=8;H>-1;--H){Crgb(__"+9*H+")t/8~<50i-30@G0~!Fm[x&31][H],150+H*G))}!2O}HH<5KH)<23i@80~z=8*(15-H~n=b[(x&31)+H*32];B00	,^^DXL A.9A	D,^^DXDL.1A.9Aif(X<G){	,``N	,^``0V2Uk V2UkN}h=p(44@1[1];*G<ZqdrawImage(a,i*Fh+i-(),F,i*F-,F~B488_h~?,h+/G~?,~?_OKt},40)';G=/[-!?-G^-`X-ZJ-LjkUVNO~|qQ:$]/.exec(_);)with(_.split(G))_=join(shift());eval(_)
+
+// =======================
+</script>
+</body>
