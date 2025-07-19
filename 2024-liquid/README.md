@@ -1,4 +1,4 @@
-**[Fireworks over water][https://js1024.fun/demos/2024/8/readme]** is my entry to the 2024 edition of js1024.fun
+**[Fireworks over water](https://js1024.fun/demos/2024/8/readme)** is my entry to the 2024 edition of js1024.fun
 Theme was *Liquid*
 
 Spoiler : the demo uses a second canvas onscreen.

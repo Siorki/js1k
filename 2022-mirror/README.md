@@ -1,4 +1,4 @@
-**[Hudson river][https://js1024.fun/demos/2022/32/readme]** is my entry to the 2022 edition of js1024.fun
+**[Hudson river](https://js1024.fun/demos/2022/32/readme)** is my entry to the 2022 edition of js1024.fun
 Theme was *Mirror*
 
 Building height and lit windows are random. So are mountains height in the background.
